@@ -5,6 +5,9 @@ import { ThemeProvider } from "@/components/theme-provider";
 import Header from '@/components/header';
 import Footer from '@/components/footer';
 import { Toaster } from "@/components/ui/toaster"
+import { AuthProvider } from "@/contexts/AuthContext"
+import { SessionProvider } from "next-auth/react"
+import SessionProviderWrapper from '@/components/SessionProviderWrapper';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -14,9 +17,10 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({
-  children,
+  children, session
 }: {
   children: React.ReactNode;
+  session: any;
 }) {
   return (
 
@@ -28,16 +32,20 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <div className="flex min-h-screen flex-col">
-            <Header />
+          <SessionProviderWrapper>
+            <AuthProvider>
+              <div className="flex min-h-screen flex-col">
+                <Header />
 
-            <main className="flex-1">{children}</main>
-            <Footer />
-          </div>
+                <main className="flex-1">{children}</main>
+                <Footer />
+              </div>
+            </AuthProvider>
+          </SessionProviderWrapper>
         </ThemeProvider>
         <Toaster />
       </body>
-    </html>
+    </html >
 
 
   );

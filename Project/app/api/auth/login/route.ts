@@ -39,8 +39,15 @@ export async function POST(request: Request) {
     const { password: _, ...userWithoutPassword } = user
 
     return NextResponse.json({
-      token,
-      user: userWithoutPassword
+      message: "Login successful",
+      token: token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        // No image for password-based login
+      }
     }, { status: 200 })
   } catch (error) {
     console.error('Login error:', error)

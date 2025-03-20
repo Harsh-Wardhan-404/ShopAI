@@ -13,10 +13,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import AuthModal from "@/components/auth/AuthModal"
+import { useAuth } from "@/contexts/AuthContext"
+import { UserAvatarMenu } from "@/components/UserAvatarMenu"
 
 export default function Header() {
   const { setTheme } = useTheme()
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
+  const { isAuthenticated } = useAuth()
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -64,13 +67,17 @@ export default function Header() {
             <ShoppingCart className="h-5 w-5" />
             <span className="sr-only">Shopping cart</span>
           </Button>
-          <Button
-            variant="ghost"
-            onClick={() => setIsAuthModalOpen(true)}
-            className="hover:text-primary"
-          >
-            Login
-          </Button>
+          {isAuthenticated ? (
+            <UserAvatarMenu />
+          ) : (
+            <Button
+              variant="ghost"
+              onClick={() => setIsAuthModalOpen(true)}
+              className="hover:text-primary"
+            >
+              Login
+            </Button>
+          )}
           <AuthModal
             isOpen={isAuthModalOpen}
             onClose={() => setIsAuthModalOpen(false)}
