@@ -1,7 +1,7 @@
-import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Leaf, Sparkles, Battery, ShoppingBag } from "lucide-react"
 import { SpotlightPreview } from "@/components/Hero"
+import { Button } from "@/components/ui/button"
 
 export default function Home() {
   return (
@@ -124,6 +124,5 @@ export default function Home() {
         </section>
       </div>
     </>
-
   )
 }

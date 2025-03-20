@@ -1,32 +1,29 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider = "sqlite"
+  url      = "file:./dev.db"
 }
 
 enum Role {
   ADMIN
-  Seller
-  Buyer
+  SELLER
+  BUYER
 }
 
-model User{
-id Int @id @default(autoincrement())
-role Role
-email String
-password String
-products Product[]
-orders Order[]
-
+model User {
+  id       Int       @id @default(autoincrement())
+  name     String
+  role     Role      @default(BUYER)
+  email    String    @unique
+  password String
+  products Product[]
+  orders   Order[]
 }
 
 model Product {
@@ -66,10 +63,8 @@ model OrderItem {
   productId Int
   product   Product @relation(fields: [productId], references: [id])
   quantity  Int
-  price     Float   // Price at the time of purchase
+  price     Float // Price at the time of purchase
 
   @@index([orderId])
   @@index([productId])
 }
-
-// model Product{}

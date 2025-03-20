@@ -1,5 +1,7 @@
 "use client"
 
+import Link from "next/link"
+import { useState } from "react"
 import { ShoppingCart, Menu, Sun, Moon, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,9 +12,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import AuthModal from "@/components/auth/AuthModal"
 
 export default function Header() {
   const { setTheme } = useTheme()
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -21,16 +25,16 @@ export default function Header() {
           <Button variant="ghost" size="icon" className="md:hidden">
             <Menu className="h-6 w-6" />
           </Button>
-          <a href="/" className="flex items-center space-x-2">
+          <Link href="/" className="flex items-center space-x-2">
             <span className="text-xl font-bold">shop.ai</span>
-          </a>
+          </Link>
           <nav className="hidden md:flex items-center gap-6">
-            <a href="/products" className="text-sm font-medium hover:underline">Products</a>
-            <a href="/categories" className="text-sm font-medium hover:underline">Categories</a>
-            <a href="/sustainable" className="text-sm font-medium hover:underline">Sustainable Picks</a>
+            <Link href="/products" className="text-sm font-medium hover:underline">Products</Link>
+            <Link href="/categories" className="text-sm font-medium hover:underline">Categories</Link>
+            <Link href="/sustainable" className="text-sm font-medium hover:underline">Sustainable Picks</Link>
           </nav>
         </div>
-        
+
         <div className="flex items-center gap-4">
           <div className="hidden md:flex relative">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -40,7 +44,7 @@ export default function Header() {
               className="pl-8 w-[200px] lg:w-[300px]"
             />
           </div>
-          
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon">
@@ -55,11 +59,22 @@ export default function Header() {
               <DropdownMenuItem onClick={() => setTheme("system")}>System</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          
+
           <Button variant="ghost" size="icon">
             <ShoppingCart className="h-5 w-5" />
             <span className="sr-only">Shopping cart</span>
           </Button>
+          <Button
+            variant="ghost"
+            onClick={() => setIsAuthModalOpen(true)}
+            className="hover:text-primary"
+          >
+            Login
+          </Button>
+          <AuthModal
+            isOpen={isAuthModalOpen}
+            onClose={() => setIsAuthModalOpen(false)}
+          />
         </div>
       </div>
     </header>
