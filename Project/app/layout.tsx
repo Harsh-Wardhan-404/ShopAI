@@ -8,6 +8,7 @@ import { Toaster } from "@/components/ui/toaster"
 import { AuthProvider } from "@/contexts/AuthContext"
 import { SessionProvider } from "next-auth/react"
 import SessionProviderWrapper from '@/components/SessionProviderWrapper';
+import { CartProvider } from "@/contexts/CartContext"
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -34,12 +35,14 @@ export default function RootLayout({
         >
           <SessionProviderWrapper>
             <AuthProvider>
-              <div className="flex min-h-screen flex-col">
-                <Header />
+              <CartProvider>
+                <div className="flex min-h-screen flex-col">
+                  <Header />
 
-                <main className="flex-1">{children}</main>
-                <Footer />
-              </div>
+                  <main className="flex-1">{children}</main>
+                  <Footer />
+                </div>
+              </CartProvider>
             </AuthProvider>
           </SessionProviderWrapper>
         </ThemeProvider>

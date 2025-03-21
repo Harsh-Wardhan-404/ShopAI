@@ -15,11 +15,13 @@ import {
 import AuthModal from "@/components/auth/AuthModal"
 import { useAuth } from "@/contexts/AuthContext"
 import { UserAvatarMenu } from "@/components/UserAvatarMenu"
+import { useCart } from "@/contexts/CartContext"
 
 export default function Header() {
   const { setTheme } = useTheme()
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
   const { isAuthenticated } = useAuth()
+  const { totalItems } = useCart()
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -62,11 +64,17 @@ export default function Header() {
               <DropdownMenuItem onClick={() => setTheme("system")}>System</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-
-          <Button variant="ghost" size="icon">
-            <ShoppingCart className="h-5 w-5" />
-            <span className="sr-only">Shopping cart</span>
-          </Button>
+          <Link href="/cart">
+            <Button variant="ghost" className="relative" size="icon">
+              <ShoppingCart className="h-5 w-5" />
+              {totalItems > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
+                  {totalItems}
+                </span>
+              )}
+              <span className="sr-only">Shopping cart</span>
+            </Button>
+          </Link>
           {isAuthenticated ? (
             <UserAvatarMenu />
           ) : (

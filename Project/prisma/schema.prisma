@@ -49,20 +49,20 @@ model User {
   name          String
   role          String    @default("BUYER")
   email         String    @unique
-  password      String?   // Made optional for OAuth users
+  password      String? // Made optional for OAuth users
   emailVerified DateTime?
-  image         String?   // For profile image from OAuth
-  
+  image         String? // For profile image from OAuth
+
   // NextAuth relations
-  accounts      Account[]
-  sessions      Session[]
-  
+  accounts Account[]
+  sessions Session[]
+
   // Your existing relations
-  orders        Order[]
-  products      Product[]
-  
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  orders   Order[]
+  products Product[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Product {
@@ -73,7 +73,7 @@ model Product {
   stock       Int         @default(0)
   imageUrl    String?
   category    String?
-  sellerId    String      // Changed from Int to String to match User.id
+  sellerId    String // Changed from Int to String to match User.id
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
   orderItems  OrderItem[]
@@ -83,14 +83,16 @@ model Product {
 }
 
 model Order {
-  id          Int         @id @default(autoincrement())
-  userId      String      // Changed from Int to String to match User.id
-  totalAmount Float
-  status      String      @default("pending")
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  user        User        @relation(fields: [userId], references: [id])
-  items       OrderItem[]
+  id              Int         @id @default(autoincrement())
+  userId          String // Changed from Int to String to match User.id
+  totalAmount     Float
+  status          String      @default("pending")
+  paymentMethod   String
+  shippingAddress String?     @db.Text
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  user            User        @relation(fields: [userId], references: [id])
+  items           OrderItem[]
 
   @@index([userId])
 }
