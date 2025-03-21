@@ -1,7 +1,10 @@
+
+
 import { Card, CardContent } from "@/components/ui/card"
 import { Leaf, Sparkles, Battery, ShoppingBag } from "lucide-react"
 import { SpotlightPreview } from "@/components/Hero"
 import { Button } from "@/components/ui/button"
+import Link from "next/link"
 
 export default function Home() {
   return (
@@ -10,8 +13,8 @@ export default function Home() {
       <div className="flex flex-col min-h-screen">
         {/* Hero Section */}
         <section className="relative py-20 px-4 bg-gradient-to-b from-primary/20 to-background">
-          <div className="container mx-auto text-center">
-            <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&q=80')] opacity-5 bg-cover bg-center" />
+          <div className="container mx-auto text-center relative z-10">
+            <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&q=80')] opacity-5 bg-cover bg-center pointer-events-none" />
             <h1 className="text-4xl md:text-6xl font-bold mb-6 relative">
               Sustainable Shopping,{" "}
               <span className="text-primary">AI-Powered</span>
@@ -20,8 +23,13 @@ export default function Home() {
               Discover eco-friendly products with personalized recommendations powered by artificial intelligence.
             </p>
             <div className="flex gap-4 justify-center">
-              <Button size="lg" className="bg-primary hover:bg-primary/90">Shop Now</Button>
+              <Link href="/products" className="inline-block">
+                <Button size="lg" className="bg-primary hover:bg-primary/90">
+                  Shop Now
+                </Button>
+              </Link>
               <Button size="lg" variant="outline" className="border-primary text-primary hover:bg-primary/10">Learn More</Button>
+
             </div>
           </div>
         </section>
