@@ -1,11 +1,12 @@
 // app/api/sentiment/route.ts
 import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     const reviews = body.reviews || [];
-
+    const productId = body.productId;
     // Calculate accurate counts based on the actual reviews
     const actualReviewCount = reviews.length;
 
@@ -107,6 +108,40 @@ export async function POST(request: Request) {
           if (!parsed.summary.includes("reviews")) {
             parsed.summary += ` (Based on ${actualReviewCount} reviews)`;
           }
+        }
+        console.log("Before saving to database");
+        try {
+          // Store the result in the database
+          await prisma.sentimentSummary.upsert({
+            where: {
+              productId: parseInt(body.productId)
+            },
+            update: {
+              reviewCount: actualReviewCount,
+              overall_sentiment: parsed.overall_sentiment,
+              sentiment_score: parsed.sentiment_score,
+              avg_rating: avgRating,
+              positive_count: parsed.positive_count,
+              neutral_count: parsed.neutral_count,
+              negative_count: parsed.negative_count,
+              summary: parsed.summary
+            },
+            create: {
+              productId: parseInt(body.productId),
+              reviewCount: actualReviewCount,
+              overall_sentiment: parsed.overall_sentiment,
+              sentiment_score: parsed.sentiment_score,
+              avg_rating: avgRating,
+              positive_count: parsed.positive_count,
+              neutral_count: parsed.neutral_count,
+              negative_count: parsed.negative_count,
+              summary: parsed.summary
+            }
+          });
+          console.log("After saving to database");
+        } catch (dbError) {
+          console.error("Error saving sentiment to database:", dbError);
+          // Continue - don't fail the request if DB save fails
         }
 
         return NextResponse.json({

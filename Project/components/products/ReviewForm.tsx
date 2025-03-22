@@ -32,7 +32,7 @@ export function ReviewForm({ productId, onReviewAdded, canReview }: ReviewFormPr
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (rating === 0) {
       toast({
         title: "Rating required",
@@ -41,9 +41,9 @@ export function ReviewForm({ productId, onReviewAdded, canReview }: ReviewFormPr
       });
       return;
     }
-    
+
     setIsSubmitting(true);
-    
+
     try {
       const response = await fetch(`/api/products/${productId}/reviews`, {
         method: "POST",
@@ -55,17 +55,26 @@ export function ReviewForm({ productId, onReviewAdded, canReview }: ReviewFormPr
           comment,
         }),
       });
-      
+
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.error || "Something went wrong");
       }
-      
+
+      try {
+        await fetch(`/api/products/${productId}/sentiment/invalidate`, {
+          method: "POST",
+        });
+      } catch (invalidateError) {
+        console.error("Failed to invalidate sentiment cache:", invalidateError);
+        // Don't block the review submission if this fails
+      }
+
       toast({
         title: "Review submitted",
         description: "Thank you for your feedback!",
       });
-      
+
       setRating(0);
       setComment("");
       onReviewAdded();
@@ -83,7 +92,7 @@ export function ReviewForm({ productId, onReviewAdded, canReview }: ReviewFormPr
   return (
     <form onSubmit={handleSubmit} className="space-y-4 mt-6 border rounded-md p-4">
       <h3 className="text-lg font-medium">Write a Review</h3>
-      
+
       <div className="flex items-center">
         <p className="mr-2">Your Rating:</p>
         <div className="flex">
@@ -97,17 +106,16 @@ export function ReviewForm({ productId, onReviewAdded, canReview }: ReviewFormPr
               className="focus:outline-none"
             >
               <StarIcon
-                className={`w-6 h-6 ${
-                  star <= (hoveredStar || rating)
+                className={`w-6 h-6 ${star <= (hoveredStar || rating)
                     ? "text-yellow-400 fill-yellow-400"
                     : "text-gray-300"
-                }`}
+                  }`}
               />
             </button>
           ))}
         </div>
       </div>
-      
+
       <div>
         <label htmlFor="comment" className="block mb-2 text-sm font-medium">
           Your Review
@@ -121,7 +129,7 @@ export function ReviewForm({ productId, onReviewAdded, canReview }: ReviewFormPr
           className="resize-none"
         />
       </div>
-      
+
       <Button
         type="submit"
         disabled={isSubmitting || rating === 0}

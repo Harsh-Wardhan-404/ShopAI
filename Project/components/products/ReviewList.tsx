@@ -47,6 +47,7 @@ export function ReviewList({ productId, refreshTrigger = 0 }: ReviewListProps) {
       setError(null);
 
       try {
+        // Fetch reviews
         const response = await fetch(`/api/products/${productId}/reviews`);
 
         if (!response.ok) {
@@ -56,11 +57,19 @@ export function ReviewList({ productId, refreshTrigger = 0 }: ReviewListProps) {
         const data = await response.json();
         const fetchedReviews = data.reviews || [];
         setReviews(fetchedReviews);
-        console.log("befor calling analyzeSentiment");
-        if (fetchedReviews.length > 0) {
+
+        // Try to get cached sentiment first
+        const sentimentResponse = await fetch(`/api/products/${productId}/sentiment`);
+        const cachedSentiment = await sentimentResponse.json();
+
+        if (cachedSentiment && !cachedSentiment.error) {
+          console.log("Using cached sentiment analysis");
+          setSentiment(cachedSentiment);
+        } else if (fetchedReviews.length > 0) {
+          // If no cached sentiment, generate a new one
+          console.log("Generating new sentiment analysis");
           await analyzeSentiment(fetchedReviews);
         }
-        console.log("after calling analyzeSentiment");
       } catch (err) {
         console.error("Error fetching reviews:", err);
         setError("Could not load reviews. Please try again later.");
@@ -83,7 +92,7 @@ export function ReviewList({ productId, refreshTrigger = 0 }: ReviewListProps) {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ reviews }),
+        body: JSON.stringify({ reviews, productId }),
       });
 
       if (!response.ok) {

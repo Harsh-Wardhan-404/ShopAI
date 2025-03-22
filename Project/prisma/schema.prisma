@@ -59,19 +59,20 @@ model User {
 }
 
 model Product {
-  id          Int         @id @default(autoincrement())
-  name        String
-  description String?
-  price       Float
-  stock       Int         @default(0)
-  imageUrl    String?
-  category    String?
-  sellerId    String
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  orderItems  OrderItem[]
-  seller      User        @relation(fields: [sellerId], references: [id])
-  reviews     Review[]
+  id               Int               @id @default(autoincrement())
+  name             String
+  description      String?
+  price            Float
+  stock            Int               @default(0)
+  imageUrl         String?
+  category         String?
+  sellerId         String
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  orderItems       OrderItem[]
+  seller           User              @relation(fields: [sellerId], references: [id])
+  reviews          Review[]
+  SentimentSummary SentimentSummary?
 
   @@index([sellerId])
 }
@@ -118,4 +119,21 @@ model Review {
   @@unique([userId, productId])
   @@index([userId])
   @@index([productId])
+}
+
+model SentimentSummary {
+  id                Int      @id @default(autoincrement())
+  productId         Int      @unique
+  reviewCount       Int
+  overall_sentiment String
+  sentiment_score   Float
+  avg_rating        Float
+  positive_count    Int
+  neutral_count     Int
+  negative_count    Int
+  summary           String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 }
