@@ -5,6 +5,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { StarIcon } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDistanceToNow } from "date-fns";
+import { AlertCircle, ThumbsUp, Meh } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 
 interface Review {
   id: number;
@@ -17,6 +19,16 @@ interface Review {
   };
 }
 
+interface SentimentAnalysis {
+  overall_sentiment: string;
+  sentiment_score: number;
+  avg_rating: number;
+  positive_count: number;
+  neutral_count: number;
+  negative_count: number;
+  summary: string;
+}
+
 interface ReviewListProps {
   productId: number;
   refreshTrigger?: number;
@@ -26,6 +38,8 @@ export function ReviewList({ productId, refreshTrigger = 0 }: ReviewListProps) {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [sentiment, setSentiment] = useState<SentimentAnalysis | null>(null);
+  const [isSentimentLoading, setIsSentimentLoading] = useState(false);
 
   useEffect(() => {
     const fetchReviews = async () => {
@@ -40,7 +54,13 @@ export function ReviewList({ productId, refreshTrigger = 0 }: ReviewListProps) {
         }
 
         const data = await response.json();
-        setReviews(data.reviews || []);
+        const fetchedReviews = data.reviews || [];
+        setReviews(fetchedReviews);
+        console.log("befor calling analyzeSentiment");
+        if (fetchedReviews.length > 0) {
+          await analyzeSentiment(fetchedReviews);
+        }
+        console.log("after calling analyzeSentiment");
       } catch (err) {
         console.error("Error fetching reviews:", err);
         setError("Could not load reviews. Please try again later.");
@@ -51,6 +71,33 @@ export function ReviewList({ productId, refreshTrigger = 0 }: ReviewListProps) {
 
     fetchReviews();
   }, [productId, refreshTrigger]);
+
+  const analyzeSentiment = async (reviews: Review[]) => {
+    if (reviews.length === 0) return;
+
+    setIsSentimentLoading(true);
+    try {
+      // Use this endpoint if calling directly from Next.js
+      const response = await fetch("/api/sentiment", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ reviews }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to analyze sentiment");
+      }
+
+      const data = await response.json();
+      setSentiment(data);
+    } catch (err) {
+      console.error("Error analyzing sentiment:", err);
+    } finally {
+      setIsSentimentLoading(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -92,6 +139,19 @@ export function ReviewList({ productId, refreshTrigger = 0 }: ReviewListProps) {
   const averageRating =
     reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length;
 
+  const getSentimentIcon = () => {
+    if (!sentiment) return <Meh className="h-5 w-5 text-gray-400" />;
+
+    switch (sentiment.overall_sentiment) {
+      case 'positive':
+        return <ThumbsUp className="h-5 w-5 text-green-500" />;
+      case 'negative':
+        return <AlertCircle className="h-5 w-5 text-red-500" />;
+      default:
+        return <Meh className="h-5 w-5 text-amber-500" />;
+    }
+  };
+
   return (
     <div className="mt-6">
       <div className="flex items-center justify-between mb-4">
@@ -102,8 +162,8 @@ export function ReviewList({ productId, refreshTrigger = 0 }: ReviewListProps) {
               <StarIcon
                 key={star}
                 className={`w-5 h-5 ${star <= Math.round(averageRating)
-                    ? "text-yellow-400 fill-yellow-400"
-                    : "text-gray-300"
+                  ? "text-yellow-400 fill-yellow-400"
+                  : "text-gray-300"
                   }`}
               />
             ))}
@@ -113,6 +173,29 @@ export function ReviewList({ productId, refreshTrigger = 0 }: ReviewListProps) {
           </span>
         </div>
       </div>
+
+      {sentiment && (
+        <Card className="mb-6">
+          <CardContent className="p-4">
+            <div className="flex items-center">
+              {getSentimentIcon()}
+              <span className="ml-2 font-medium">Review Summary:</span>
+              <span className="ml-2">{sentiment.summary}</span>
+            </div>
+            <div className="flex mt-2 text-sm text-muted-foreground">
+              <div className="mr-4">
+                <span className="text-green-500 font-medium">{sentiment.positive_count}</span> positive
+              </div>
+              <div className="mr-4">
+                <span className="text-amber-500 font-medium">{sentiment.neutral_count}</span> neutral
+              </div>
+              <div>
+                <span className="text-red-500 font-medium">{sentiment.negative_count}</span> negative
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="space-y-4">
         {reviews.map((review) => (
@@ -137,8 +220,8 @@ export function ReviewList({ productId, refreshTrigger = 0 }: ReviewListProps) {
                 <StarIcon
                   key={star}
                   className={`w-4 h-4 ${star <= review.rating
-                      ? "text-yellow-400 fill-yellow-400"
-                      : "text-gray-300"
+                    ? "text-yellow-400 fill-yellow-400"
+                    : "text-gray-300"
                     }`}
                 />
               ))}
