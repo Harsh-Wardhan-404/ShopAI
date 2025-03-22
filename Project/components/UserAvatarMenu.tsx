@@ -11,9 +11,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { LogOut, User } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 export function UserAvatarMenu() {
   const { user, logout } = useAuth()
+  const router = useRouter()
+
 
   // Get initials for the avatar fallback
   const getInitials = (name: string) => {
@@ -39,7 +42,7 @@ export function UserAvatarMenu() {
           {user?.email || ""}
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem>
+        <DropdownMenuItem onClick={() => router.push('/profile')}>
           <User className="mr-2 h-4 w-4" />
           Profile
         </DropdownMenuItem>

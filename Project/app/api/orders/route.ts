@@ -7,25 +7,25 @@ import { authOptions } from "@/pages/api/auth/[...nextauth]";
 export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session || !session.user) {
       return NextResponse.json(
         { error: "You must be logged in to create an order" },
         { status: 401 }
       );
     }
-    
+
     const userId = session.user.id as string;
-    
+
     if (!userId) {
       return NextResponse.json(
         { error: "User ID not found" },
         { status: 400 }
       );
     }
-    
+
     const body = await request.json();
-    
+
     // Validate required fields
     if (!body.items || !Array.isArray(body.items) || body.items.length === 0) {
       return NextResponse.json(
@@ -33,7 +33,7 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
-    
+
     // Create the order with a transaction to ensure all related data is saved
     const order = await prisma.$transaction(async (tx) => {
       // 1. Create the order
@@ -41,12 +41,12 @@ export async function POST(request: Request) {
         data: {
           userId,
           totalAmount: body.total,
-          status: body.paymentMethod === "cod" ? "pending" : "processing",
+          status: "completed",
           shippingAddress: JSON.stringify(body.shippingAddress),
           paymentMethod: body.paymentMethod,
         },
       });
-      
+
       // 2. Create order items
       const orderItems = await Promise.all(
         body.items.map((item: any) =>
@@ -60,7 +60,7 @@ export async function POST(request: Request) {
           })
         )
       );
-      
+
       // 3. Update product stock (optional)
       await Promise.all(
         body.items.map((item: any) =>
@@ -74,13 +74,13 @@ export async function POST(request: Request) {
           })
         )
       );
-      
+
       return {
         ...newOrder,
         items: orderItems,
       };
     });
-    
+
     return NextResponse.json(
       { message: "Order created successfully", order },
       { status: 201 }
@@ -98,16 +98,16 @@ export async function POST(request: Request) {
 export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session || !session.user) {
       return NextResponse.json(
         { error: "You must be logged in to view orders" },
         { status: 401 }
       );
     }
-    
+
     const userId = session.user.id as string;
-    
+
     const orders = await prisma.order.findMany({
       where: { userId },
       orderBy: { createdAt: 'desc' },
@@ -124,7 +124,7 @@ export async function GET(request: Request) {
         },
       },
     });
-    
+
     return NextResponse.json({ orders });
   } catch (error) {
     console.error("Error fetching orders:", error);

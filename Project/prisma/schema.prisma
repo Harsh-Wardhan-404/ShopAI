@@ -7,22 +7,20 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// NextAuth Models
 model Account {
   id                String  @id @default(cuid())
   userId            String
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
+  refresh_token     String?
+  access_token      String?
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String? @db.Text
+  id_token          String?
   session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
 }
@@ -43,26 +41,21 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
-// Your existing models with updated IDs for NextAuth compatibility
 model User {
-  id            String    @id @default(cuid()) // Changed from Int to String
+  id            String    @id @default(cuid())
   name          String
   role          String    @default("BUYER")
   email         String    @unique
-  password      String? // Made optional for OAuth users
+  password      String?
   emailVerified DateTime?
-  image         String? // For profile image from OAuth
-
-  // NextAuth relations
-  accounts Account[]
-  sessions Session[]
-
-  // Your existing relations
-  orders   Order[]
-  products Product[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  accounts      Account[]
+  orders        Order[]
+  products      Product[]
+  reviews       Review[]
+  sessions      Session[]
 }
 
 model Product {
@@ -73,24 +66,25 @@ model Product {
   stock       Int         @default(0)
   imageUrl    String?
   category    String?
-  sellerId    String // Changed from Int to String to match User.id
+  sellerId    String
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
   orderItems  OrderItem[]
   seller      User        @relation(fields: [sellerId], references: [id])
+  reviews     Review[]
 
   @@index([sellerId])
 }
 
 model Order {
   id              Int         @id @default(autoincrement())
-  userId          String // Changed from Int to String to match User.id
+  userId          String
   totalAmount     Float
   status          String      @default("pending")
-  paymentMethod   String
-  shippingAddress String?     @db.Text
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
+  paymentMethod   String
+  shippingAddress String?
   user            User        @relation(fields: [userId], references: [id])
   items           OrderItem[]
 
@@ -103,9 +97,25 @@ model OrderItem {
   productId Int
   quantity  Int
   price     Float
-  product   Product @relation(fields: [productId], references: [id])
   order     Order   @relation(fields: [orderId], references: [id])
+  product   Product @relation(fields: [productId], references: [id])
 
   @@index([orderId])
+  @@index([productId])
+}
+
+model Review {
+  id        Int      @id @default(autoincrement())
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  userId    String
+  productId Int
+  product   Product  @relation(fields: [productId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId, productId])
+  @@index([userId])
   @@index([productId])
 }

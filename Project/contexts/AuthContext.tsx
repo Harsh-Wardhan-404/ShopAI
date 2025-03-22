@@ -1,90 +1,76 @@
+// contexts/AuthContext.tsx
 "use client"
 
-import { createContext, useContext, ReactNode } from "react"
-// import { useSession, signOut } from "next-auth/react"
-import { Session } from "next-auth"
-import { useSession } from "next-auth/react"
-import { signIn, signOut } from "next-auth/react"
-
-type User = {
-  id?: number | string
-  name?: string | null
-  email?: string | null
-  image?: string | null
-  role?: string
-}
-
-interface ExtendedSession extends Session {
-  user: {
-    name?: string | null
-    email?: string | null
-    image?: string | null
-    // Optional fields that might not exist in the session
-    id?: string | number
-    role?: string
-  }
-}
+import { createContext, useContext, useState, useEffect, ReactNode } from "react"
+import { useSession, signIn, signOut } from "next-auth/react"
 
 type AuthContextType = {
-  user: User | null
-  isAuthenticated: boolean
-  login: (userData: User, token?: string) => void
-  logout: () => void
+  user: any | null,
+  isAuthenticated: boolean,
+  isLoading: boolean,
+  login: (email: string, password: string) => Promise<any>,
+  logout: () => Promise<any>,
+  register: (name: string, email: string, password: string) => Promise<any>,
+  openAuthModal: () => void, // Add this method
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const { data: session, status } = useSession() as {
-    data: ExtendedSession | null,
-    status: "loading" | "authenticated" | "unauthenticated"
+  const { data: session, status } = useSession()
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
+  
+  const isLoading = status === "loading"
+  const isAuthenticated = !!session
+  
+  // Add your authentication functions here...
+  const login = async (email: string, password: string) => {
+    // Your login implementation
+    return signIn("credentials", { email, password, redirect: false })
   }
-
-  // Combine NextAuth session with custom JWT login
-  const isAuthenticated = status === "authenticated" || localStorage.getItem("token") !== null
-
-  // Combine user data from NextAuth and your custom JWT
-  let user: User | null = null
-
-  if (session?.user) {
-    // User from NextAuth session
-    user = {
-      id: session.user.id || session.user.email || "",
-      name: session.user.name,
-      email: session.user.email,
-      image: session.user.image,
-      role: session.user.role || "BUYER" // Default role
+  
+  const logout = async () => {
+    // Your logout implementation
+    return signOut({ redirect: false })
+  }
+  
+  const register = async (name: string, email: string, password: string) => {
+    // Your registration implementation  
+    const response = await fetch("/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, email, password }),
+    })
+    return response.json()
+  }
+  
+  // Add this new function to open the auth modal
+  const openAuthModal = () => {
+    setIsAuthModalOpen(true)
+  }
+  
+  // Update effect to watch isAuthModalOpen and show the modal
+  useEffect(() => {
+    if (isAuthModalOpen) {
+      // If you have a global modal state setter, use it here
+      // For example, if you use a global store or a context:
+      // setGlobalAuthModalOpen(true)
+      
+      // Or, if you're using a different approach for modals:
+      document.dispatchEvent(new CustomEvent('open-auth-modal'))
     }
-  } else if (localStorage.getItem("token")) {
-    // Try to get user data from localStorage if available
-    try {
-      const storedUser = localStorage.getItem("user")
-      if (storedUser) {
-        user = JSON.parse(storedUser)
-      }
-    } catch (error) {
-      console.error("Failed to parse stored user data", error)
-    }
-  }
-
-  const login = (userData: User, token?: string) => {
-    if (token) {
-      localStorage.setItem("token", token)
-    }
-    localStorage.setItem("user", JSON.stringify(userData))
-  }
-
-  const logout = () => {
-    // Clear localStorage
-    localStorage.removeItem("token")
-    localStorage.removeItem("user")
-
-    // Also sign out from NextAuth
-    signOut({ redirect: false })
-  }
-
+  }, [isAuthModalOpen])
+  
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, login, logout }}>
+    <AuthContext.Provider value={{
+      user: session?.user || null,
+      isAuthenticated,
+      isLoading,
+      login,
+      logout,
+      register,
+      openAuthModal // Add the new method
+    }}>
       {children}
     </AuthContext.Provider>
   )
