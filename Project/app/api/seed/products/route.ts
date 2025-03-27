@@ -1,4 +1,3 @@
-
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
@@ -12,10 +11,10 @@ export async function POST(request: Request) {
       { status: 403 }
     );
   }
-  
+
   try {
     const body = await request.json();
-    
+
     // Validate data
     if (!Array.isArray(body.products) || body.products.length === 0) {
       return NextResponse.json(
@@ -23,15 +22,15 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
-    
+
     // Get or create a test user if not provided
     let sellerId = body.sellerId;
-    
+
     if (!sellerId) {
       const testUser = await prisma.user.findFirst({
         where: { email: "test@example.com" }
       });
-      
+
       if (testUser) {
         sellerId = testUser.id;
       } else {
@@ -39,16 +38,20 @@ export async function POST(request: Request) {
           data: {
             email: "test@example.com",
             name: "Test User",
+            password: "$2a$10$X7oB4TqMVldb.IkVx6ZC4Of0gRImJrOw993C8mS45zBxF/x3DCghe", // "password123"
             role: "SELLER"
           }
         });
         sellerId = newUser.id;
       }
     }
-    
+
     // Create products
     const products = await Promise.all(
       body.products.map(async (product: any) => {
+        // Ensure category is set, default to "Other" if missing
+        const category = product.category || "Other";
+
         return prisma.product.create({
           data: {
             name: product.name,
@@ -56,21 +59,21 @@ export async function POST(request: Request) {
             price: parseFloat(product.price),
             stock: product.stock ? parseInt(product.stock) : 10,
             imageUrl: product.imageUrl || null,
-            category: product.category || null,
+            category: category,
             sellerId: sellerId,
           }
         });
       })
     );
-    
-    return NextResponse.json({ 
-      message: `Successfully created ${products.length} products`, 
-      products 
+
+    return NextResponse.json({
+      message: `Successfully created ${products.length} products`,
+      products
     }, { status: 201 });
   } catch (error) {
     console.error("Error seeding products:", error);
     return NextResponse.json(
-      { error: "Failed to seed products" },
+      { error: "Failed to seed products", details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     );
   }
