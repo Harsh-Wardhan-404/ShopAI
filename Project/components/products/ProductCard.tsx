@@ -45,6 +45,9 @@ export function ProductCard({ product }: ProductCardProps) {
             src={product.imageUrl || "/placeholder-product.jpg"}
             alt={product.name}
             fill
+            loading="lazy"
+            placeholder="blur"
+            blurDataURL="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjJmMmYyIi8+PC9zdmc+"
             className="object-cover transition-transform group-hover:scale-105"
           />
           {product.category && (
