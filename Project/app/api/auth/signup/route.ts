@@ -1,34 +1,38 @@
 import { NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcryptjs'
-
-// Create a new PrismaClient instance for each request
-const prisma = new PrismaClient()
+import { prisma } from '@/lib/prisma'
 
 export const dynamic = 'force-dynamic';
 
+// Add connection timeout to prevent hanging requests
+const TIMEOUT = 5000; // 5 seconds
+
 export async function POST(request: Request) {
   console.log("Signup API called")
-  try {
-    const body = await request.json()
-    console.log("Request body:", body)
-    const { name, email, password } = body
 
-    // Validate inputs
+  // Create a timeout promise to prevent hanging requests
+  const timeoutPromise = new Promise((_, reject) => {
+    setTimeout(() => reject(new Error('Request timeout')), TIMEOUT);
+  });
+
+  try {
+    // Parse the request body
+    const body = await Promise.race([request.json(), timeoutPromise]) as any;
+    const { name, email, password } = body;
+
+    // Validate input
     if (!name || !email || !password) {
-      return NextResponse.json({ message: 'All fields are required' }, { status: 400 })
+      return NextResponse.json({ message: 'Missing required fields' }, { status: 400 });
     }
 
     if (password.length < 6) {
       return NextResponse.json({ message: 'Password must be at least 6 characters' }, { status: 400 })
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10)
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
       where: {
         email: email
-        // password: hashedPassword 
       },
     })
 
@@ -37,6 +41,7 @@ export async function POST(request: Request) {
     }
 
     // Hash the password
+    const hashedPassword = await bcrypt.hash(password, 10)
 
     console.log("Creating user with data:", {
       name,
@@ -69,7 +74,5 @@ export async function POST(request: Request) {
       message: 'Internal server error',
       details: error instanceof Error ? error.message : String(error)
     }, { status: 500 })
-  } finally {
-    await prisma.$disconnect()
   }
 }
