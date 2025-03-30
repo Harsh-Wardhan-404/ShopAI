@@ -1,21 +1,22 @@
 import { NextResponse } from "next/server";
-import { getRecommendations } from "@/lib/recommendations";
 import { prisma } from "@/lib/prisma";
+import { getRecommendations } from "@/lib/recommendations";
 
 export async function GET(
   request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
+    // Use the ID directly from params
     const productId = parseInt(params.id, 10);
-    
+
     if (isNaN(productId)) {
       return NextResponse.json(
         { error: "Invalid product ID format" },
         { status: 400 }
       );
     }
-    
+
     // Check if product exists
     const productExists = await prisma.product.findUnique({
       where: { id: productId },
@@ -30,13 +31,12 @@ export async function GET(
 
     // Get recommendations from Ollama based on product ID
     const products = await getRecommendations({ productId });
-    
+
+    // Always return a successful response, even if products array is empty
     return NextResponse.json({ products });
   } catch (error) {
     console.error("Error fetching similar products:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch similar products" },
-      { status: 500 }
-    );
+    // Return empty array instead of error
+    return NextResponse.json({ products: [] });
   }
 }

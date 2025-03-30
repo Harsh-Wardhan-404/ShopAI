@@ -16,6 +16,10 @@ export default function OrderConfirmationPage({ params }: { params: { id: string
   const [loading, setLoading] = useState(true)
   const [recommendations, setRecommendations] = useState([])
   const [loadingRecommendations, setLoadingRecommendations] = useState(true)
+  const [requestState, setRequestState] = useState({
+    orderRequested: false,
+    recommendationsRequested: false
+  })
   const router = useRouter()
   const { toast } = useToast()
   const { clearCart } = useCart()
@@ -24,48 +28,61 @@ export default function OrderConfirmationPage({ params }: { params: { id: string
     // Clear cart when confirmation page loads
     clearCart()
 
-    async function fetchOrder() {
-      try {
-        const response = await fetch(`/api/orders/${params.id}`)
+    // Only run these API calls once
+    if (!requestState.orderRequested) {
+      async function fetchOrder() {
+        try {
+          // Set flag to prevent multiple requests
+          setRequestState(prev => ({ ...prev, orderRequested: true }))
 
-        if (!response.ok) {
-          throw new Error("Failed to fetch order")
+          const response = await fetch(`/api/orders/${params.id}`)
+
+          if (!response.ok) {
+            throw new Error("Failed to fetch order")
+          }
+
+          const data = await response.json()
+          setOrder(data.order)
+        } catch (error) {
+          console.error("Error fetching order:", error)
+          toast({
+            title: "Error",
+            description: "Could not load order details",
+            variant: "destructive"
+          })
+        } finally {
+          setLoading(false)
         }
-
-        const data = await response.json()
-        setOrder(data.order)
-      } catch (error) {
-        console.error("Error fetching order:", error)
-        toast({
-          title: "Error",
-          description: "Could not load order details",
-          variant: "destructive"
-        })
-      } finally {
-        setLoading(false)
       }
+
+      fetchOrder()
     }
 
-    async function fetchRecommendations() {
-      try {
-        const response = await fetch(`/api/recommendations/order/${params.id}`)
+    // Only run recommendation API call once
+    if (!requestState.recommendationsRequested) {
+      async function fetchRecommendations() {
+        try {
+          // Set flag to prevent multiple requests
+          setRequestState(prev => ({ ...prev, recommendationsRequested: true }))
 
-        if (!response.ok) {
-          throw new Error("Failed to fetch recommendations")
+          const response = await fetch(`/api/recommendations/order/${params.id}`)
+
+          if (!response.ok) {
+            throw new Error("Failed to fetch recommendations")
+          }
+
+          const data = await response.json()
+          setRecommendations(data.products)
+        } catch (error) {
+          console.error("Error fetching recommendations:", error)
+        } finally {
+          setLoadingRecommendations(false)
         }
-
-        const data = await response.json()
-        setRecommendations(data.products)
-      } catch (error) {
-        console.error("Error fetching recommendations:", error)
-      } finally {
-        setLoadingRecommendations(false)
       }
-    }
 
-    fetchOrder()
-    fetchRecommendations()
-  }, [params.id, toast, clearCart])
+      fetchRecommendations()
+    }
+  }, [params.id, toast, clearCart, requestState])
 
   if (loading) {
     return (
