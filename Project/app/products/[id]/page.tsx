@@ -13,8 +13,9 @@ import { useCart } from "@/contexts/CartContext";
 import Link from "next/link";
 import { AddToCartButton } from "@/components/products/AddToCartButton";
 import { ProductGrid } from "@/components/products/ProductGrid";
-
-
+import { useState, useEffect } from "react";
+import RecommendedProducts from "@/components/RecommendedProducts";
+import ProductRecommendations from "@/components/ProductRecommendations";
 
 
 export default async function ProductPage({ params }: { params: { id: string } }) {
@@ -143,11 +144,9 @@ export default async function ProductPage({ params }: { params: { id: string } }
         </div>
       </div>
 
-      {/* Related products section Uncomment later for product recommendation */}
-      {/* <div className="mt-16">
-        <h2 className="text-2xl font-bold mb-6">You may also like</h2>
-        <ProductGrid products={relatedProducts} />
-      </div> */}
+      <div className="mt-16">
+        <ProductRecommendations productId={product.id} />
+      </div>
     </div>
   );
 }

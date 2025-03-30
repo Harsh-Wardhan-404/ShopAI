@@ -8,22 +8,30 @@ import { formatCurrency } from "@/lib/utils"
 import { Check, ArrowRight, ShoppingBag } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useToast } from "@/components/ui/use-toast"
+import { useCart } from "@/contexts/CartContext"
+import RecommendedProducts from "@/components/RecommendedProducts"
 
 export default function OrderConfirmationPage({ params }: { params: { id: string } }) {
   const [order, setOrder] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [recommendations, setRecommendations] = useState([])
+  const [loadingRecommendations, setLoadingRecommendations] = useState(true)
   const router = useRouter()
   const { toast } = useToast()
-  
+  const { clearCart } = useCart()
+
   useEffect(() => {
+    // Clear cart when confirmation page loads
+    clearCart()
+
     async function fetchOrder() {
       try {
         const response = await fetch(`/api/orders/${params.id}`)
-        
+
         if (!response.ok) {
           throw new Error("Failed to fetch order")
         }
-        
+
         const data = await response.json()
         setOrder(data.order)
       } catch (error) {
@@ -37,111 +45,123 @@ export default function OrderConfirmationPage({ params }: { params: { id: string
         setLoading(false)
       }
     }
-    
+
+    async function fetchRecommendations() {
+      try {
+        const response = await fetch(`/api/recommendations/order/${params.id}`)
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch recommendations")
+        }
+
+        const data = await response.json()
+        setRecommendations(data.products)
+      } catch (error) {
+        console.error("Error fetching recommendations:", error)
+      } finally {
+        setLoadingRecommendations(false)
+      }
+    }
+
     fetchOrder()
-  }, [params.id, toast])
-  
+    fetchRecommendations()
+  }, [params.id, toast, clearCart])
+
   if (loading) {
     return (
-      <div className="container py-12 max-w-3xl mx-auto">
-        <Skeleton className="h-12 w-2/3 mb-6" />
-        <Skeleton className="h-64 w-full mb-6" />
-        <Skeleton className="h-12 w-full" />
+      <div className="container py-12">
+        <h1 className="text-2xl font-bold mb-6">Order Confirmation</h1>
+        <div className="space-y-4">
+          <Skeleton className="h-8 w-3/4" />
+          <Skeleton className="h-64 w-full" />
+        </div>
       </div>
     )
   }
-  
-  // If order not found and not loading
-  if (!order && !loading) {
+
+  if (!order) {
     return (
-      <div className="container py-12 text-center">
-        <h1 className="text-3xl font-bold mb-6">Order Not Found</h1>
-        <p className="mb-6">We couldn't find the order you're looking for.</p>
-        <Link href="/">
-          <Button>Return to Home</Button>
-        </Link>
+      <div className="container py-12">
+        <h1 className="text-2xl font-bold mb-6">Order Not Found</h1>
+        <p>We couldn't find the order you're looking for.</p>
+        <Button asChild className="mt-4">
+          <Link href="/">Return Home</Link>
+        </Button>
       </div>
     )
   }
-  
-  // If we have order data
-  const shippingAddress = order.shippingAddress ? 
-    (typeof order.shippingAddress === 'string' ? 
-      JSON.parse(order.shippingAddress) : 
-      order.shippingAddress) : 
-    {};
-  
+
+  // Format order date
+  const orderDate = new Date(order.createdAt).toLocaleDateString()
+
   return (
-    <div className="container py-12 max-w-3xl mx-auto">
-      <div className="text-center mb-12">
-        <div className="inline-flex items-center justify-center h-24 w-24 rounded-full bg-green-100 text-green-600 mb-4">
-          <Check className="h-12 w-12" />
-        </div>
-        <h1 className="text-3xl font-bold">Order Confirmed!</h1>
-        <p className="text-muted-foreground mt-2">
-          Your order #{order.id} has been placed successfully
-        </p>
-      </div>
-      
-      <div className="border rounded-lg overflow-hidden mb-8">
-        <div className="bg-muted p-4">
-          <h2 className="font-semibold">Order Summary</h2>
-        </div>
-        
-        <div className="p-4 space-y-4">
-          <div className="space-y-2">
-            <p className="text-sm font-medium">Date: {new Date(order.createdAt).toLocaleDateString()}</p>
-            <p className="text-sm font-medium">Status: <span className="capitalize">{order.status}</span></p>
-            <p className="text-sm font-medium">Payment Method: {order.paymentMethod === 'cod' ? 'Cash on Delivery' : 'Online Payment'}</p>
+    <div className="container py-12">
+      <div className="max-w-3xl mx-auto">
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-8">
+          <div className="flex items-center gap-3">
+            <div className="bg-green-100 rounded-full p-2">
+              <Check className="h-6 w-6 text-green-600" />
+            </div>
+            <div>
+              <h1 className="text-xl font-semibold">Order Confirmed</h1>
+              <p className="text-green-700">Thank you for your purchase!</p>
+            </div>
           </div>
-          
-          <div className="border-t pt-4">
-            <h3 className="font-medium mb-2">Items</h3>
-            <div className="space-y-2">
+        </div>
+
+        <h2 className="text-lg font-medium mb-4">Order Summary</h2>
+        <div className="bg-white border rounded-lg shadow-sm divide-y">
+          <div className="p-4">
+            <p className="text-sm text-gray-500">Order #{order.id}</p>
+            <p className="text-sm text-gray-500">Placed on {orderDate}</p>
+          </div>
+
+          <div className="p-4">
+            <h3 className="font-medium mb-3">Items</h3>
+            <div className="space-y-4">
               {order.items.map((item: any) => (
                 <div key={item.id} className="flex justify-between">
-                  <span>
-                    {item.product?.name || `Product #${item.productId}`} × {item.quantity}
-                  </span>
-                  <span className="font-medium">
-                    {formatCurrency(item.price * item.quantity)}
-                  </span>
+                  <div>
+                    <p>{item.product.name}</p>
+                    <p className="text-sm text-gray-500">Quantity: {item.quantity}</p>
+                  </div>
+                  <p>{formatCurrency(item.product.price * item.quantity)}</p>
                 </div>
               ))}
             </div>
           </div>
-          
-          <div className="border-t pt-4">
-            <h3 className="font-medium mb-2">Shipping Address</h3>
-            <address className="not-italic text-sm">
-              {shippingAddress.fullName}<br />
-              {shippingAddress.address}<br />
-              {shippingAddress.city}, {shippingAddress.state} {shippingAddress.pincode}<br />
-              Phone: {shippingAddress.phone}
-            </address>
-          </div>
-          
-          <div className="border-t pt-4">
-            <div className="flex justify-between font-bold">
-              <span>Total</span>
-              <span>{formatCurrency(order.totalAmount)}</span>
-            </div>
+
+          <div className="p-4 flex justify-between font-medium">
+            <p>Total</p>
+            <p>{formatCurrency(order.items.reduce((sum: number, item: any) =>
+              sum + (item.product.price * item.quantity), 0))}
+            </p>
           </div>
         </div>
-      </div>
-      
-      <div className="flex flex-col sm:flex-row gap-4 justify-center">
-        <Link href="/">
-          <Button variant="outline" size="lg">
-            Continue Shopping
+
+        <div className="mt-8 flex flex-col sm:flex-row gap-4">
+          <Button asChild>
+            <Link href="/">
+              <ShoppingBag className="mr-2 h-4 w-4" />
+              Continue Shopping
+            </Link>
           </Button>
-        </Link>
-        <Link href="/account/orders">
-          <Button size="lg">
-            <ShoppingBag className="mr-2 h-4 w-4" /> View All Orders
+          <Button variant="outline" asChild>
+            <Link href="/account/orders">
+              View All Orders
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Link>
           </Button>
-        </Link>
+        </div>
       </div>
+
+      {/* Ollama-powered recommendations */}
+      <RecommendedProducts
+        products={recommendations}
+        loading={loadingRecommendations}
+        title="Recommended for You"
+        className="mt-12 max-w-6xl mx-auto"
+      />
     </div>
   )
 }
