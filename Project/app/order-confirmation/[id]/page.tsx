@@ -1,5 +1,7 @@
 "use client"
 
+export const dynamic = 'force-dynamic';
+
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
@@ -30,7 +32,7 @@ export default function OrderConfirmationPage({ params }: { params: { id: string
 
     // Only run these API calls once
     if (!requestState.orderRequested) {
-      async function fetchOrder() {
+      const fetchOrder = async () => {
         try {
           // Set flag to prevent multiple requests
           setRequestState(prev => ({ ...prev, orderRequested: true }))
@@ -60,7 +62,7 @@ export default function OrderConfirmationPage({ params }: { params: { id: string
 
     // Only run recommendation API call once
     if (!requestState.recommendationsRequested) {
-      async function fetchRecommendations() {
+      const fetchRecommendations = async () => {
         try {
           // Set flag to prevent multiple requests
           setRequestState(prev => ({ ...prev, recommendationsRequested: true }))
@@ -136,7 +138,7 @@ export default function OrderConfirmationPage({ params }: { params: { id: string
           <div className="p-4">
             <h3 className="font-medium mb-3">Items</h3>
             <div className="space-y-4">
-              {order.items.map((item: any) => (
+              {order.orderItems?.map((item: any) => (
                 <div key={item.id} className="flex justify-between">
                   <div>
                     <p>{item.product.name}</p>
@@ -150,8 +152,8 @@ export default function OrderConfirmationPage({ params }: { params: { id: string
 
           <div className="p-4 flex justify-between font-medium">
             <p>Total</p>
-            <p>{formatCurrency(order.items.reduce((sum: number, item: any) =>
-              sum + (item.product.price * item.quantity), 0))}
+            <p>{formatCurrency(order.orderItems?.reduce((sum: number, item: any) =>
+              sum + (item.product.price * item.quantity), 0) || 0)}
             </p>
           </div>
         </div>
