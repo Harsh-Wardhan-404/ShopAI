@@ -59,20 +59,22 @@ model User {
 }
 
 model Product {
-  id               Int               @id @default(autoincrement())
-  name             String
-  description      String?
-  price            Float
-  stock            Int               @default(0)
-  imageUrl         String?
-  category         String?
-  sellerId         String
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
-  orderItems       OrderItem[]
-  seller           User              @relation(fields: [sellerId], references: [id])
-  reviews          Review[]
-  SentimentSummary SentimentSummary?
+  id                           Int               @id @default(autoincrement())
+  name                         String
+  description                  String?
+  price                        Float
+  stock                        Int               @default(0)
+  imageUrl                     String?
+  category                     String?
+  sellerId                     String
+  createdAt                    DateTime          @default(now())
+  updatedAt                    DateTime          @updatedAt
+  orderItems                   OrderItem[]
+  seller                       User              @relation(fields: [sellerId], references: [id])
+  reviews                      Review[]
+  SentimentSummary             SentimentSummary?
+  recommendedProductIds        String? // Stores comma-separated IDs of recommended products
+  recommendedProductsUpdatedAt DateTime?
 
   @@index([sellerId])
 }

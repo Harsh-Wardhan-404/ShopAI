@@ -22,6 +22,7 @@ export default function ProductRecommendations({ productId }: { productId: numbe
   const [recommendations, setRecommendations] = useState<ProductWithCategories[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
     const fetchRecommendations = async () => {
@@ -41,6 +42,12 @@ export default function ProductRecommendations({ productId }: { productId: numbe
 
         if (data.products && data.products.length > 0) {
           setRecommendations(data.products);
+          setIsRefreshing(data.refreshing || false);
+
+          // If recommendations are being refreshed in the background, poll for updates
+          if (data.refreshing) {
+            setTimeout(() => pollForUpdatedRecommendations(productId), 3000);
+          }
         } else {
           // If no recommendations are returned, fetch popular products instead
           console.log("No recommendations returned, fetching popular products");
@@ -66,6 +73,41 @@ export default function ProductRecommendations({ productId }: { productId: numbe
         }
       } finally {
         setLoading(false);
+      }
+    };
+
+    const pollForUpdatedRecommendations = async (productId: number) => {
+      try {
+        console.log('Polling for updated recommendations');
+        const response = await fetch(`/api/recommendations/similar/${productId}`);
+
+        if (!response.ok) {
+          console.error('Failed to poll for updated recommendations');
+          return;
+        }
+
+        const data = await response.json();
+
+        // Only update if we have new recommendations and they're different
+        if (data.products && data.products.length > 0) {
+          const currentIds = recommendations.map(p => p.id).join(',');
+          const newIds = data.products.map((p: any) => p.id).join(',');
+
+          if (currentIds !== newIds) {
+            console.log('Found updated recommendations, refreshing UI');
+            setRecommendations(data.products);
+          }
+
+          // If still refreshing, continue polling
+          if (data.refreshing) {
+            setTimeout(() => pollForUpdatedRecommendations(productId), 3000);
+          } else {
+            setIsRefreshing(false);
+          }
+        }
+      } catch (error) {
+        console.error('Error polling for updated recommendations:', error);
+        setIsRefreshing(false);
       }
     };
 
@@ -118,7 +160,14 @@ export default function ProductRecommendations({ productId }: { productId: numbe
 
   return (
     <div className="mt-8">
-      <h2 className="text-xl font-bold mb-4">You might also like</h2>
+      <div className="flex items-center mb-4">
+        <h2 className="text-xl font-bold">You might also like</h2>
+        {isRefreshing && (
+          <span className="ml-2 text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+            Refreshing...
+          </span>
+        )}
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {mappedProducts.map((product) => (
           <ProductCard key={product.id} product={product} />
