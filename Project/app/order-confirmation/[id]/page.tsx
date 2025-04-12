@@ -134,7 +134,7 @@ export default function OrderConfirmationPage({ params }: { params: { id: string
           <div className="bg-gray-800 px-6 py-4 border-b border-gray-700">
             <h2 className="text-xl font-semibold text-white">Order Summary</h2>
           </div>
-          
+
           {/* Order Details */}
           <div className="p-6 border-b border-gray-700">
             <div className="flex justify-between items-center mb-4">
@@ -151,14 +151,14 @@ export default function OrderConfirmationPage({ params }: { params: { id: string
           <div className="p-6 border-b border-gray-700">
             <h3 className="font-semibold text-white mb-4">Items</h3>
             <div className="space-y-4 divide-y divide-gray-700">
-              {order.orderItems?.map((item: any) => (
+              {order.items?.map((item: any) => (
                 <div key={item.id} className="flex justify-between pt-4 first:pt-0">
                   <div className="flex gap-4">
                     <div className="w-16 h-16 bg-gray-800 rounded-md flex items-center justify-center overflow-hidden flex-shrink-0">
                       {item.product.imageUrl ? (
-                        <img 
-                          src={item.product.imageUrl} 
-                          alt={item.product.name} 
+                        <img
+                          src={item.product.imageUrl}
+                          alt={item.product.name}
                           className="object-cover w-full h-full"
                         />
                       ) : (
@@ -168,10 +168,10 @@ export default function OrderConfirmationPage({ params }: { params: { id: string
                     <div>
                       <p className="font-medium text-white">{item.product.name}</p>
                       <p className="text-sm text-gray-400 mt-1">Quantity: {item.quantity}</p>
-                      <p className="text-sm text-gray-400 mt-1">{formatCurrency(item.product.price)} each</p>
+                      <p className="text-sm text-gray-400 mt-1">{formatCurrency(item.product.price || 0)} each</p>
                     </div>
                   </div>
-                  <p className="font-medium text-white">{formatCurrency(item.product.price * item.quantity)}</p>
+                  <p className="font-medium text-white">{formatCurrency((item.product.price || 0) * item.quantity)}</p>
                 </div>
               ))}
             </div>
@@ -182,8 +182,8 @@ export default function OrderConfirmationPage({ params }: { params: { id: string
             <div className="flex justify-between items-center">
               <p className="text-lg font-semibold text-white">Total</p>
               <p className="text-lg font-bold text-green-400">{formatCurrency(
-                order.totalAmount || 
-                order.orderItems?.reduce((sum: number, item: any) =>
+                order.totalAmount ||
+                order.items?.reduce((sum: number, item: any) =>
                   sum + (item.product.price * item.quantity), 0) || 0
               )}
               </p>

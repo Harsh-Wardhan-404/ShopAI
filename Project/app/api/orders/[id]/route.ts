@@ -1,4 +1,3 @@
-
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
@@ -10,23 +9,23 @@ export async function GET(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session || !session.user) {
       return NextResponse.json(
         { error: "You must be logged in to view this order" },
         { status: 401 }
       );
     }
-    
+
     const orderId = parseInt(params.id);
-    
+
     if (isNaN(orderId)) {
       return NextResponse.json(
         { error: "Invalid order ID" },
         { status: 400 }
       );
     }
-    
+
     const order = await prisma.order.findUnique({
       where: { id: orderId },
       include: {
@@ -37,20 +36,21 @@ export async function GET(
                 id: true,
                 name: true,
                 imageUrl: true,
+                price: true,
               },
             },
           },
         },
       },
     });
-    
+
     if (!order) {
       return NextResponse.json(
         { error: "Order not found" },
         { status: 404 }
       );
     }
-    
+
     // Check if the order belongs to the current user
     if (order.userId !== session.user.id) {
       return NextResponse.json(
@@ -58,7 +58,7 @@ export async function GET(
         { status: 403 }
       );
     }
-    
+
     return NextResponse.json({ order });
   } catch (error) {
     console.error("Error fetching order:", error);
