@@ -5,7 +5,7 @@ import { Product } from '@prisma/client';
 import { ProductCard } from '@/components/products/ProductCard';
 
 interface ProductWithCategories extends Product {
-  categories: { id: number; name: string }[];
+  Category: { id: number; name: string }[];
 }
 
 // Interface matching what ProductCard expects
@@ -155,7 +155,7 @@ export default function ProductRecommendations({ productId }: { productId: numbe
     description: product.description || undefined,
     price: product.price,
     imageUrl: product.imageUrl || undefined,
-    category: product.categories?.length > 0 ? product.categories[0].name : undefined
+    category: product.Category?.length > 0 ? product.Category[0].name : undefined
   }));
 
   return (

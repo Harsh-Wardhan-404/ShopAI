@@ -47,7 +47,7 @@ export async function GET(
         where: {
           id: { in: recommendedIds }
         },
-        include: { categories: true }
+        include: { Category: true }
       });
 
       // Sort products to match the order in recommendedProductIds
@@ -101,7 +101,7 @@ export async function GET(
         where: { id: { not: productId } },
         orderBy: { orderItems: { _count: 'desc' } },
         take: 4,
-        include: { categories: true }
+        include: { Category: true }
       });
 
       return NextResponse.json({ products: fallbackProducts, cached: false });

@@ -15,7 +15,7 @@ export async function GET(request: Request) {
       },
       take: limit,
       include: {
-        categories: true
+        Category: true
       }
     });
 

@@ -42,39 +42,44 @@ model VerificationToken {
 }
 
 model User {
-  id            String    @id @default(cuid())
+  id            String        @id @default(cuid())
   name          String
-  role          String    @default("BUYER")
-  email         String    @unique
+  role          String        @default("BUYER")
+  email         String        @unique
   password      String?
   emailVerified DateTime?
   image         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
   accounts      Account[]
   orders        Order[]
   products      Product[]
+  ProductView   ProductView[]
   reviews       Review[]
   sessions      Session[]
 }
 
 model Product {
-  id                           Int               @id @default(autoincrement())
-  name                         String
-  description                  String?
-  price                        Float
-  stock                        Int               @default(0)
-  imageUrl                     String?
-  category                     String?
-  sellerId                     String
-  createdAt                    DateTime          @default(now())
-  updatedAt                    DateTime          @updatedAt
-  orderItems                   OrderItem[]
-  seller                       User              @relation(fields: [sellerId], references: [id])
-  reviews                      Review[]
-  SentimentSummary             SentimentSummary?
-  recommendedProductIds        String? // Stores comma-separated IDs of recommended products
-  recommendedProductsUpdatedAt DateTime?
+  id                                                     Int                 @id @default(autoincrement())
+  name                                                   String
+  description                                            String?
+  price                                                  Float
+  stock                                                  Int                 @default(0)
+  imageUrl                                               String?
+  recommendedProductIds                                  String?
+  recommendedProductsUpdatedAt                           DateTime?
+  category                                               String?
+  sellerId                                               String
+  createdAt                                              DateTime            @default(now())
+  updatedAt                                              DateTime            @updatedAt
+  orderItems                                             OrderItem[]
+  seller                                                 User                @relation(fields: [sellerId], references: [id])
+  ProductSimilarity_ProductSimilarity_productIdToProduct ProductSimilarity[] @relation("ProductSimilarity_productIdToProduct")
+  ProductSimilarity_ProductSimilarity_similarIdToProduct ProductSimilarity[] @relation("ProductSimilarity_similarIdToProduct")
+  ProductView                                            ProductView[]
+  reviews                                                Review[]
+  SentimentSummary                                       SentimentSummary?
+  Category                                               Category[]          @relation("ProductToCategory")
 
   @@index([sellerId])
 }
@@ -136,6 +141,36 @@ model SentimentSummary {
   summary           String
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
+  product           Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
 
-  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+model Category {
+  id      Int       @id @default(autoincrement())
+  name    String    @unique
+  Product Product[] @relation("ProductToCategory")
+}
+
+model ProductSimilarity {
+  id                                           Int     @id @default(autoincrement())
+  productId                                    Int
+  similarId                                    Int
+  score                                        Float
+  Product_ProductSimilarity_productIdToProduct Product @relation("ProductSimilarity_productIdToProduct", fields: [productId], references: [id], onDelete: Cascade)
+  Product_ProductSimilarity_similarIdToProduct Product @relation("ProductSimilarity_similarIdToProduct", fields: [similarId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, similarId])
+  @@index([productId])
+  @@index([similarId])
+}
+
+model ProductView {
+  id        Int      @id @default(autoincrement())
+  userId    String
+  productId Int
+  viewedAt  DateTime @default(now())
+  Product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  User      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@index([userId])
 }
