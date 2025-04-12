@@ -1,8 +1,7 @@
 # TO DO
 
-1. Load the review before hand
-2. suggest products based on order history
-3. Implement products page with categories
+1. Attach the recommendations to the product beforehand, and then update when ollama sends them 
+2. Implement caching for reviews and products
+3. Load the review before hand
 4. Lazy loading
 5. Unit testing
-6. Add a about page which will display the green statistics about the project 
