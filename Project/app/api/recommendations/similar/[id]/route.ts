@@ -36,7 +36,7 @@ export async function GET(
     // Check if we have cached recommendations
     let products = [];
     const hasCachedRecommendations = !!product.recommendedProductIds;
-
+    
     // Check if recommendations need refresh (older than 24 hours)
     const needsRefresh = !product.recommendedProductsUpdatedAt ||
       new Date().getTime() - new Date(product.recommendedProductsUpdatedAt).getTime() > 86400000; // 24 hours
@@ -59,14 +59,14 @@ export async function GET(
     // If we have cached recommendations, return them immediately
     if (products.length > 0) {
       console.log(`Returning ${products.length} cached recommendations for product ${productId}`);
-
+      
       // Trigger a background update if needed
       if (needsRefresh) {
         console.log(`Triggering background refresh of recommendations for product ${productId}`);
         // Fetch fresh recommendations in the background
         updateRecommendationsInBackground(productId);
       }
-
+      
       return NextResponse.json({
         products,
         cached: true,
@@ -78,8 +78,8 @@ export async function GET(
     // If no cached recommendations available, get popular products immediately
     console.log(`No cached recommendations found for product ${productId}, fetching popular products for immediate display`);
     const popularProducts = await prisma.product.findMany({
-      where: {
-        id: { not: productId }
+      where: { 
+        id: { not: productId } 
       },
       orderBy: { orderItems: { _count: 'desc' } },
       take: 4,
@@ -91,8 +91,8 @@ export async function GET(
     updateRecommendationsInBackground(productId);
 
     // Return popular products immediately with refreshing flag
-    return NextResponse.json({
-      products: popularProducts,
+    return NextResponse.json({ 
+      products: popularProducts, 
       cached: false,
       refreshing: true
     });
@@ -103,15 +103,27 @@ export async function GET(
   }
 }
 
+// Special key to track backgrounds tasks and prevent duplicates
+const activeBackgroundTasks = new Set<number>();
+
 // Function to update recommendations in the background
 async function updateRecommendationsInBackground(productId: number) {
+  // If this product is already being processed, don't start a new task
+  if (activeBackgroundTasks.has(productId)) {
+    console.log(`Background update for product ${productId} already in progress, skipping`);
+    return;
+  }
+
   try {
+    // Mark this product as being processed
+    activeBackgroundTasks.add(productId);
+    
     // Use setTimeout with 0 to not block the response
     setTimeout(async () => {
       try {
         console.log(`Background update: Starting for product ${productId}`);
         const freshProducts = await getRecommendations({ productId });
-
+        
         if (freshProducts && freshProducts.length > 0) {
           const recommendedIds = freshProducts.map(p => p.id).join(',');
           await prisma.product.update({
@@ -127,9 +139,14 @@ async function updateRecommendationsInBackground(productId: number) {
         }
       } catch (error) {
         console.error(`Background update: Failed for product ${productId}:`, error);
+      } finally {
+        // Always remove from active tasks when done, regardless of success or failure
+        activeBackgroundTasks.delete(productId);
       }
     }, 0);
   } catch (error) {
+    // Remove from active tasks if the setup fails
+    activeBackgroundTasks.delete(productId);
     console.error(`Failed to initialize background update for product ${productId}:`, error);
   }
 }
