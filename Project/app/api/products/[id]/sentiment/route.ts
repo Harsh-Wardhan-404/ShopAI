@@ -25,8 +25,8 @@ export async function GET(
     });
 
     // Check if sentiment needs refresh (outdated or doesn't exist)
-    const needsRefresh = 
-      !cachedSentiment || 
+    const needsRefresh =
+      !cachedSentiment ||
       cachedSentiment.reviewCount !== reviewCount;
 
     // If the sentiment needs a refresh and there's no active task, trigger background update
@@ -38,7 +38,7 @@ export async function GET(
         include: { user: true },
         orderBy: { createdAt: 'desc' }
       });
-      
+
       // Trigger background sentiment analysis
       updateSentimentInBackground(productId, reviews);
     }
@@ -57,7 +57,7 @@ export async function GET(
       where: { productId },
       select: { rating: true }
     });
-    
+
     if (ratings.length > 0) {
       const avgRating = ratings.reduce((acc, r) => acc + r.rating, 0) / ratings.length;
       const basicSentiment = {
@@ -70,7 +70,7 @@ export async function GET(
         summary: `Based on ${ratings.length} ratings with an average of ${avgRating.toFixed(1)} stars.`,
         refreshing: true
       };
-      
+
       return NextResponse.json(basicSentiment);
     }
 
@@ -96,34 +96,34 @@ async function updateSentimentInBackground(productId: number, reviews: any[]) {
   try {
     // Mark this product as being processed
     activeSentimentTasks.add(productId);
-    
+
     // Use setTimeout with 0 to not block the response
     setTimeout(async () => {
       try {
         console.log(`Background sentiment analysis: Starting for product ${productId}`);
-        
+
         // Use absolute URL for server-side fetch
         const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
         const host = process.env.VERCEL_URL || process.env.NEXT_PUBLIC_APP_URL || 'localhost:3000';
         const apiUrl = `${protocol}://${host}/api/sentiment`;
-        
+
         console.log(`Using API URL: ${apiUrl}`);
-        
+
         // Call the sentiment analysis API
         const response = await fetch(apiUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ 
-            reviews, 
+          body: JSON.stringify({
+            reviews,
             productId,
             background: true // Flag to indicate this is a background process
           }),
         });
-        
+
         if (!response.ok) {
           throw new Error(`Sentiment API returned ${response.status}`);
         }
-        
+
         console.log(`Background sentiment analysis: Completed for product ${productId}`);
       } catch (error) {
         console.error(`Background sentiment analysis: Failed for product ${productId}:`, error);

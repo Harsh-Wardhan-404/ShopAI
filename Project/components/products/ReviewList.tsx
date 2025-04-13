@@ -73,11 +73,11 @@ export function ReviewList({ productId, refreshTrigger = 0 }: ReviewListProps) {
         // Try to get cached sentiment first
         const sentimentResponse = await fetch(`/api/products/${productId}/sentiment`);
         const cachedSentiment = await sentimentResponse.json();
-        
+
         if (cachedSentiment && !cachedSentiment.error) {
           console.log("Using cached sentiment analysis");
           setSentiment(cachedSentiment);
-          
+
           // Check if sentiment is refreshing in the background
           if (cachedSentiment.refreshing) {
             setIsRefreshing(true);
@@ -105,32 +105,32 @@ export function ReviewList({ productId, refreshTrigger = 0 }: ReviewListProps) {
     try {
       console.log('Polling for updated sentiment analysis');
       const response = await fetch(`/api/products/${productId}/sentiment`);
-      
+
       if (!response.ok) {
         console.error('Failed to poll for updated sentiment');
         setIsRefreshing(false);
         return;
       }
-      
+
       const data = await response.json();
-      
+
       // If we got sentiment data and it's different from what we have
       if (data && !data.error) {
         // Compare to see if it's different
-        const isSentimentDifferent = !sentiment || 
+        const isSentimentDifferent = !sentiment ||
           sentiment.summary !== data.summary ||
           sentiment.positive_count !== data.positive_count ||
           sentiment.negative_count !== data.negative_count ||
           sentiment.neutral_count !== data.neutral_count;
-        
+
         if (isSentimentDifferent) {
           console.log('Found updated sentiment analysis, refreshing UI');
           setSentiment(data);
         }
-        
+
         // Continue polling if still refreshing
         setIsRefreshing(!!data.refreshing);
-        
+
         if (data.refreshing) {
           pollingTimeoutRef.current = setTimeout(pollForUpdatedSentiment, 3000);
         }
@@ -302,11 +302,10 @@ export function ReviewList({ productId, refreshTrigger = 0 }: ReviewListProps) {
                 {[1, 2, 3, 4, 5].map((star) => (
                   <StarIcon
                     key={star}
-                    className={`w-4 h-4 ${
-                      star <= review.rating
+                    className={`w-4 h-4 ${star <= review.rating
                         ? "text-yellow-400 fill-yellow-400"
                         : "text-gray-300"
-                    }`}
+                      }`}
                   />
                 ))}
               </div>

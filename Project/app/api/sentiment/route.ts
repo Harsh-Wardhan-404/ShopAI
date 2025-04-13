@@ -13,7 +13,7 @@ class OllamaRateLimiter {
   private lastRequestTime = 0;
   private requestDelayMs = 2000; // 2 seconds between requests
 
-  private constructor() {}
+  private constructor() { }
 
   public static getInstance(): OllamaRateLimiter {
     if (!OllamaRateLimiter.instance) {
@@ -25,7 +25,7 @@ class OllamaRateLimiter {
   public async schedule<T>(fn: () => Promise<T>): Promise<T> {
     return new Promise<T>((resolve, reject) => {
       this.queue.push({ resolve, reject, fn });
-      
+
       if (!this.processing) {
         this.processQueue();
       }
@@ -41,7 +41,7 @@ class OllamaRateLimiter {
     this.processing = true;
     const now = Date.now();
     const timeSinceLastRequest = now - this.lastRequestTime;
-    
+
     if (timeSinceLastRequest < this.requestDelayMs) {
       const delay = this.requestDelayMs - timeSinceLastRequest;
       await new Promise(resolve => setTimeout(resolve, delay));
@@ -72,7 +72,7 @@ export async function POST(request: Request) {
     const reviews = body.reviews || [];
     const productId = body.productId;
     const isBackground = !!body.background;
-    
+
     // Calculate accurate counts based on the actual reviews
     const actualReviewCount = reviews.length;
 
@@ -249,7 +249,7 @@ export async function POST(request: Request) {
         };
       } catch (error) {
         console.error("Error in Ollama request:", error);
-        
+
         // Fallback to rating-based analysis
         const fallbackAnalysis = {
           overall_sentiment: avgRating >= 4 ? "positive" : avgRating >= 3 ? "neutral" : "negative",
@@ -260,7 +260,7 @@ export async function POST(request: Request) {
           negative_count: ratings.filter((r: number) => r <= 2).length,
           summary: `Based on ${ratings.length} ratings with an average of ${avgRating.toFixed(1)} stars`
         };
-        
+
         // Still save the fallback to the database
         try {
           await prisma.sentimentSummary.upsert({
@@ -278,7 +278,7 @@ export async function POST(request: Request) {
         } catch (dbError) {
           console.error("Error saving fallback sentiment to database:", dbError);
         }
-        
+
         return fallbackAnalysis;
       }
     };
@@ -290,7 +290,7 @@ export async function POST(request: Request) {
       ollamaRateLimiter.schedule(performSentimentAnalysis)
         .then(() => console.log(`Background sentiment analysis completed for product ${productId}`))
         .catch(err => console.error(`Background sentiment analysis failed for product ${productId}:`, err));
-      
+
       // Return immediately for background requests
       return NextResponse.json({ status: "processing" });
     } else {
