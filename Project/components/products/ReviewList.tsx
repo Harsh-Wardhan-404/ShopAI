@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { StarIcon } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -27,6 +27,7 @@ interface SentimentAnalysis {
   neutral_count: number;
   negative_count: number;
   summary: string;
+  refreshing?: boolean;
 }
 
 interface ReviewListProps {
@@ -40,6 +41,17 @@ export function ReviewList({ productId, refreshTrigger = 0 }: ReviewListProps) {
   const [error, setError] = useState<string | null>(null);
   const [sentiment, setSentiment] = useState<SentimentAnalysis | null>(null);
   const [isSentimentLoading, setIsSentimentLoading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const pollingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    // Cleanup polling timeout on unmount or when product changes
+    return () => {
+      if (pollingTimeoutRef.current) {
+        clearTimeout(pollingTimeoutRef.current);
+      }
+    };
+  }, [productId]);
 
   useEffect(() => {
     const fetchReviews = async () => {
@@ -61,13 +73,21 @@ export function ReviewList({ productId, refreshTrigger = 0 }: ReviewListProps) {
         // Try to get cached sentiment first
         const sentimentResponse = await fetch(`/api/products/${productId}/sentiment`);
         const cachedSentiment = await sentimentResponse.json();
-
+        
         if (cachedSentiment && !cachedSentiment.error) {
           console.log("Using cached sentiment analysis");
           setSentiment(cachedSentiment);
+          
+          // Check if sentiment is refreshing in the background
+          if (cachedSentiment.refreshing) {
+            setIsRefreshing(true);
+            pollForUpdatedSentiment();
+          } else {
+            setIsRefreshing(false);
+          }
         } else if (fetchedReviews.length > 0) {
-          // If no cached sentiment, generate a new one
-          console.log("Generating new sentiment analysis");
+          // If no cached sentiment, generate a new one directly
+          console.log("No cached sentiment available, generating new sentiment analysis");
           await analyzeSentiment(fetchedReviews);
         }
       } catch (err) {
@@ -80,6 +100,49 @@ export function ReviewList({ productId, refreshTrigger = 0 }: ReviewListProps) {
 
     fetchReviews();
   }, [productId, refreshTrigger]);
+
+  const pollForUpdatedSentiment = async () => {
+    try {
+      console.log('Polling for updated sentiment analysis');
+      const response = await fetch(`/api/products/${productId}/sentiment`);
+      
+      if (!response.ok) {
+        console.error('Failed to poll for updated sentiment');
+        setIsRefreshing(false);
+        return;
+      }
+      
+      const data = await response.json();
+      
+      // If we got sentiment data and it's different from what we have
+      if (data && !data.error) {
+        // Compare to see if it's different
+        const isSentimentDifferent = !sentiment || 
+          sentiment.summary !== data.summary ||
+          sentiment.positive_count !== data.positive_count ||
+          sentiment.negative_count !== data.negative_count ||
+          sentiment.neutral_count !== data.neutral_count;
+        
+        if (isSentimentDifferent) {
+          console.log('Found updated sentiment analysis, refreshing UI');
+          setSentiment(data);
+        }
+        
+        // Continue polling if still refreshing
+        setIsRefreshing(!!data.refreshing);
+        
+        if (data.refreshing) {
+          pollingTimeoutRef.current = setTimeout(pollForUpdatedSentiment, 3000);
+        }
+      } else {
+        // Stop polling if we no longer get valid data
+        setIsRefreshing(false);
+      }
+    } catch (error) {
+      console.error('Error polling for updated sentiment:', error);
+      setIsRefreshing(false);
+    }
+  };
 
   const analyzeSentiment = async (reviews: Review[]) => {
     if (reviews.length === 0) return;
@@ -117,7 +180,7 @@ export function ReviewList({ productId, refreshTrigger = 0 }: ReviewListProps) {
             <div className="flex items-center space-x-2">
               <Skeleton className="w-10 h-10 rounded-full" />
               <div className="space-y-1">
-                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-4 w-20" />
                 <Skeleton className="h-3 w-16" />
               </div>
             </div>
@@ -130,21 +193,23 @@ export function ReviewList({ productId, refreshTrigger = 0 }: ReviewListProps) {
   }
 
   if (error) {
-    return <div className="p-4 text-red-500">{error}</div>;
+    return (
+      <div className="mt-6">
+        <h3 className="text-xl font-medium mb-4">Customer Reviews</h3>
+        <div className="text-red-500">{error}</div>
+      </div>
+    );
   }
 
   if (reviews.length === 0) {
     return (
       <div className="mt-6">
         <h3 className="text-xl font-medium mb-4">Customer Reviews</h3>
-        <div className="border rounded-md p-6 text-center text-muted-foreground">
-          No reviews yet. Be the first to review this product!
-        </div>
+        <p>No reviews yet. Be the first to review this product!</p>
       </div>
     );
   }
 
-  // Calculate average rating
   const averageRating =
     reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length;
 
@@ -190,6 +255,15 @@ export function ReviewList({ productId, refreshTrigger = 0 }: ReviewListProps) {
               {getSentimentIcon()}
               <span className="ml-2 font-medium">Review Summary:</span>
               <span className="ml-2">{sentiment.summary}</span>
+              {isRefreshing && (
+                <div className="ml-auto flex items-center text-xs text-gray-500">
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span>Updating analysis...</span>
+                </div>
+              )}
             </div>
             <div className="flex mt-2 text-sm text-muted-foreground">
               <div className="mr-4">
@@ -217,26 +291,27 @@ export function ReviewList({ productId, refreshTrigger = 0 }: ReviewListProps) {
                 </AvatarFallback>
               </Avatar>
               <div>
-                <p className="font-medium">{review.user.name}</p>
-                <p className="text-xs text-muted-foreground">
-                  {formatDistanceToNow(new Date(review.createdAt), { addSuffix: true })}
-                </p>
+                <div className="font-medium">{review.user.name}</div>
+                <div className="text-sm text-gray-500">
+                  {formatDistanceToNow(new Date(review.createdAt), {
+                    addSuffix: true,
+                  })}
+                </div>
+              </div>
+              <div className="ml-auto flex">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <StarIcon
+                    key={star}
+                    className={`w-4 h-4 ${
+                      star <= review.rating
+                        ? "text-yellow-400 fill-yellow-400"
+                        : "text-gray-300"
+                    }`}
+                  />
+                ))}
               </div>
             </div>
-
-            <div className="flex mb-2">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <StarIcon
-                  key={star}
-                  className={`w-4 h-4 ${star <= review.rating
-                    ? "text-yellow-400 fill-yellow-400"
-                    : "text-gray-300"
-                    }`}
-                />
-              ))}
-            </div>
-
-            {review.comment && <p className="text-sm">{review.comment}</p>}
+            <p>{review.comment}</p>
           </div>
         ))}
       </div>
