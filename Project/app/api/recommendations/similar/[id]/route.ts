@@ -9,7 +9,6 @@ export async function GET(
   try {
     const productId = parseInt(params.id, 10);
     console.log("Processing similar products API for product:", productId);
-
     if (isNaN(productId)) {
       return NextResponse.json(
         { error: "Invalid product ID format" },
@@ -37,6 +36,8 @@ export async function GET(
     // Check if we have cached recommendations
     let products = [];
     const hasCachedRecommendations = !!product.recommendedProductIds;
+
+    // Check if recommendations need refresh (older than 24 hours)
     const needsRefresh = !product.recommendedProductsUpdatedAt ||
       new Date().getTime() - new Date(product.recommendedProductsUpdatedAt).getTime() > 86400000; // 24 hours
 
@@ -74,38 +75,27 @@ export async function GET(
       });
     }
 
-    // If no cached recommendations, get real-time recommendations
-    console.log(`No cached recommendations found for product ${productId}, fetching in real-time`);
-    try {
-      const freshProducts = await getRecommendations({ productId });
+    // If no cached recommendations available, get popular products immediately
+    console.log(`No cached recommendations found for product ${productId}, fetching popular products for immediate display`);
+    const popularProducts = await prisma.product.findMany({
+      where: {
+        id: { not: productId }
+      },
+      orderBy: { orderItems: { _count: 'desc' } },
+      take: 4,
+      include: { Category: true }
+    });
 
-      // Store these recommendations for future use
-      if (freshProducts && freshProducts.length > 0) {
-        const recommendedIds = freshProducts.map(p => p.id).join(',');
-        await prisma.product.update({
-          where: { id: productId },
-          data: {
-            recommendedProductIds: recommendedIds,
-            recommendedProductsUpdatedAt: new Date()
-          }
-        });
-      }
+    // Trigger recommendations generation in the background
+    console.log(`Triggering background generation of recommendations for product ${productId}`);
+    updateRecommendationsInBackground(productId);
 
-      console.log(`Returning ${freshProducts?.length} fresh recommendations for product ${productId}`);
-      return NextResponse.json({ products: freshProducts, cached: false });
-    } catch (error) {
-      console.error("Failed to get recommendations, falling back to popular products:", error);
-
-      // Fallback to popular products
-      const fallbackProducts = await prisma.product.findMany({
-        where: { id: { not: productId } },
-        orderBy: { orderItems: { _count: 'desc' } },
-        take: 4,
-        include: { Category: true }
-      });
-
-      return NextResponse.json({ products: fallbackProducts, cached: false });
-    }
+    // Return popular products immediately with refreshing flag
+    return NextResponse.json({
+      products: popularProducts,
+      cached: false,
+      refreshing: true
+    });
   } catch (error) {
     console.error("Error in similar products API:", error);
     // Return empty array instead of error
@@ -131,15 +121,15 @@ async function updateRecommendationsInBackground(productId: number) {
               recommendedProductsUpdatedAt: new Date()
             }
           });
-          console.log(`Background update: Successfully updated recommendations for product ${productId}`);
+          console.log(`Background update: Completed for product ${productId}, saved ${freshProducts.length} recommendations`);
         } else {
-          console.log(`Background update: No fresh recommendations found for product ${productId}`);
+          console.log(`Background update: No recommendations found for product ${productId}`);
         }
       } catch (error) {
         console.error(`Background update: Failed for product ${productId}:`, error);
       }
     }, 0);
   } catch (error) {
-    console.error(`Failed to queue background update for product ${productId}:`, error);
+    console.error(`Failed to initialize background update for product ${productId}:`, error);
   }
 }
