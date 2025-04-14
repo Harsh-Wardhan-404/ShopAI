@@ -1,30 +1,27 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { CO2 } from '@tgwf/co2';
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle 
+import { co2 } from '@tgwf/co2'; // CO2.js library
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
 } from "@/components/ui/card";
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  Legend, 
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
   ResponsiveContainer,
   PieChart,
   Pie,
   Cell
 } from 'recharts';
-
-// Add type declaration for the CO2.js library
-declare module '@tgwf/co2';
 
 // Define a type for resource data
 type ResourceData = {
@@ -55,7 +52,7 @@ export default function AboutUs() {
     // Create a function to measure page performance
     const measurePerformance = () => {
       setIsLoading(true);
-      
+
       // Use requestAnimationFrame to ensure we're measuring after the page has rendered
       requestAnimationFrame(() => {
         // Wait a bit to ensure all resources are loaded
@@ -71,7 +68,7 @@ export default function AboutUs() {
 
     // Add a listener for when resources finish loading
     window.addEventListener('load', measurePerformance);
-    
+
     return () => {
       window.removeEventListener('load', measurePerformance);
     };
@@ -80,7 +77,7 @@ export default function AboutUs() {
   const calculatePageMetrics = () => {
     try {
       console.log("Calculating metrics...");
-      
+
       // Initialize variables
       let totalBytes = 0;
       let loadTime = 0;
@@ -95,32 +92,33 @@ export default function AboutUs() {
       // Get navigation timing data
       if (typeof window !== 'undefined' && 'performance' in window) {
         console.log("Performance API available");
-        
+
         // Get navigation timing data
         const navEntries = performance.getEntriesByType('navigation');
         console.log("Navigation entries:", navEntries.length);
-        
+
         if (navEntries && navEntries.length > 0) {
           const navTiming = navEntries[0] as PerformanceNavigationTiming;
           loadTime = navTiming.loadEventEnd - navTiming.startTime;
           console.log("Load time calculated:", loadTime);
-          
+
           // For more accurate transfer size, use the navigation entry
           totalBytes += navTiming.transferSize || 0;
           console.log("Navigation transfer size:", navTiming.transferSize);
         }
-        
+
         // Get resource timing data
         const resources = performance.getEntriesByType('resource');
         console.log("Resource entries:", resources.length);
-        
+
         if (resources && resources.length > 0) {
-          resources.forEach((resource: PerformanceResourceTiming) => {
+          // Cast the resources array to the correct type to fix TypeScript error
+          (resources as PerformanceResourceTiming[]).forEach((resource) => {
             // Use transferSize which is the actual bytes transferred over the network
             const size = resource.transferSize || 0;
             if (size > 0) {
               totalBytes += size;
-              
+
               // Categorize by resource type
               const url = resource.name.toLowerCase();
               if (url.endsWith('.js')) {
@@ -160,7 +158,7 @@ export default function AboutUs() {
           resourceTypes.css = 100000;
           resourceTypes.other = 100000;
         }
-        
+
         // Use a reasonable load time if we couldn't measure it
         if (loadTime === 0) {
           loadTime = 800; // 800ms as a reasonable fallback
@@ -177,39 +175,75 @@ export default function AboutUs() {
         }));
 
       // Calculate CO2 emissions using the CO2.js library
-      const co2 = new CO2();
-      const emissions = co2.perByte(totalBytes, false); // false = not green hosting
+      try {
+        // Create the CO2 calculator with custom options
+        const options = {
+          gridIntensity: {
+            dataCenter: { country: "USA" }, // Assuming data center is in the US
+          }
+        };
 
-      console.log("Final metrics:", {
-        totalBytes,
-        co2Emissions: emissions,
-        loadTime
-      });
+        // The co2 instance was imported directly, not as a constructor
+        const emissions = co2.perByte(totalBytes, options);
 
-      // Update state with calculated metrics
-      setPageMetrics({
-        totalBytes,
-        co2Emissions: emissions,
-        loadTime
-      });
+        // The result might be a complex object rather than a simple number
+        let emissionsValue: number;
 
-      setResourceBreakdown(resourceBreakdownData);
+        if (typeof emissions === 'number') {
+          emissionsValue = emissions;
+        } else if (emissions && typeof emissions === 'object') {
+          // Extract the total from the CO2EstimateComponents object
+          emissionsValue = emissions.total || 0;
+        } else {
+          throw new Error('Invalid emissions result format');
+        }
+
+        console.log("Final metrics:", {
+          totalBytes,
+          co2Emissions: emissionsValue,
+          loadTime
+        });
+
+        // Update state with calculated metrics
+        setPageMetrics({
+          totalBytes,
+          co2Emissions: emissionsValue,
+          loadTime
+        });
+
+        setResourceBreakdown(resourceBreakdownData);
+      } catch (error) {
+        console.error('Error calculating CO2 emissions:', error);
+
+        // Fallback CO2 calculation if the library fails
+        const fallbackEmissions = totalBytes * 0.0000005; // Simple estimation
+
+        console.log("Using fallback CO2 calculation:", fallbackEmissions);
+
+        setPageMetrics({
+          totalBytes,
+          co2Emissions: fallbackEmissions,
+          loadTime
+        });
+
+        setResourceBreakdown(resourceBreakdownData);
+      }
     } catch (error) {
       console.error('Error calculating metrics:', error);
-      
+
       // Use minimal fallback data on error
       const fallbackData = {
         totalBytes: 500000, // 500KB
         co2Emissions: 0.00025, // Corresponding CO2 emission
         loadTime: 800, // 800ms
       };
-      
+
       const fallbackBreakdown = [
         { name: 'javascript', size: 293, percentage: 60 },
         { name: 'css', size: 98, percentage: 20 },
         { name: 'other', size: 98, percentage: 20 }
       ];
-      
+
       setPageMetrics(fallbackData);
       setResourceBreakdown(fallbackBreakdown);
     }
@@ -224,20 +258,20 @@ export default function AboutUs() {
   return (
     <div className="container mx-auto py-10">
       <h1 className="text-4xl font-bold mb-8 text-center">About ShopAI</h1>
-      
+
       <div className="mb-12">
         <p className="text-lg mb-4">
-          ShopAI is committed to sustainable e-commerce practices. As part of our green software development initiative, 
+          ShopAI is committed to sustainable e-commerce practices. As part of our green software development initiative,
           we continuously monitor and optimize our application's carbon footprint.
         </p>
         <p className="text-lg mb-4">
-          Our team is dedicated to creating an efficient, eco-friendly shopping experience while providing 
+          Our team is dedicated to creating an efficient, eco-friendly shopping experience while providing
           top-notch service to our customers.
         </p>
       </div>
 
       <h2 className="text-2xl font-bold mb-6 text-center">Green Software Metrics</h2>
-      
+
       {isLoading ? (
         <div className="text-center py-10">
           <p className="text-lg">Calculating green metrics...</p>
@@ -254,7 +288,7 @@ export default function AboutUs() {
                 <p className="text-4xl font-bold">{(pageMetrics.totalBytes / 1024).toFixed(2)} KB</p>
               </CardContent>
             </Card>
-            
+
             <Card>
               <CardHeader>
                 <CardTitle>CO₂ Emissions</CardTitle>
@@ -262,12 +296,10 @@ export default function AboutUs() {
               </CardHeader>
               <CardContent className="text-center">
                 <p className="text-4xl font-bold">{pageMetrics.co2Emissions.toFixed(6)} g</p>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Equivalent to {(pageMetrics.co2Emissions / 0.000008).toFixed(2)} meters driven by car
-                </p>
+
               </CardContent>
             </Card>
-            
+
             <Card>
               <CardHeader>
                 <CardTitle>Page Load Time</CardTitle>
@@ -301,7 +333,7 @@ export default function AboutUs() {
                 </ResponsiveContainer>
               </CardContent>
             </Card>
-            
+
             <Card>
               <CardHeader>
                 <CardTitle>Resource Distribution</CardTitle>
@@ -334,9 +366,9 @@ export default function AboutUs() {
         </>
       )}
 
-      <div className="bg-green-50 p-6 rounded-lg mb-10">
-        <h3 className="text-xl font-bold mb-4">Our Green Initiatives</h3>
-        <ul className="list-disc pl-6 space-y-2">
+      <div className="bg-green-100 p-6 rounded-lg mb-10 border border-green-200 shadow-sm">
+        <h3 className="text-xl font-bold mb-4 text-green-800">Our Green Initiatives</h3>
+        <ul className="list-disc pl-6 space-y-2 text-green-700">
           <li>Optimizing code to reduce computational resources</li>
           <li>Minimizing data transfer with efficient asset loading</li>
           <li>Using CDNs to reduce network distance</li>
@@ -348,8 +380,8 @@ export default function AboutUs() {
       <div className="text-center text-sm text-gray-500 mt-10">
         <p>Carbon metrics calculated using CO2.js from The Green Web Foundation</p>
         <p className="mt-1">
-          <button 
-            onClick={calculatePageMetrics} 
+          <button
+            onClick={calculatePageMetrics}
             className="underline hover:text-blue-500"
           >
             Recalculate Metrics
