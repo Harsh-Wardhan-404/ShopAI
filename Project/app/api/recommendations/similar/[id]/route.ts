@@ -34,7 +34,7 @@ export async function GET(
     }
 
     // Check if we have cached recommendations
-    let products = [];
+    let products = [] as Array<{ id: number; Category: any[] }>;
     const hasCachedRecommendations = !!product.recommendedProductIds;
 
     // Check if recommendations need refresh (older than 24 hours)
@@ -42,7 +42,7 @@ export async function GET(
       new Date().getTime() - new Date(product.recommendedProductsUpdatedAt).getTime() > 86400000; // 24 hours
 
     // If we have cached recommendations, fetch those products
-    if (hasCachedRecommendations) {
+    if (hasCachedRecommendations && product.recommendedProductIds) {
       const recommendedIds = product.recommendedProductIds.split(',').map(id => parseInt(id.trim(), 10));
       products = await prisma.product.findMany({
         where: {
@@ -125,7 +125,7 @@ async function updateRecommendationsInBackground(productId: number) {
         const freshProducts = await getRecommendations({ productId });
 
         if (freshProducts && freshProducts.length > 0) {
-          const recommendedIds = freshProducts.map(p => p.id).join(',');
+          const recommendedIds = freshProducts.map(p => p?.id).join(',');
           await prisma.product.update({
             where: { id: productId },
             data: {

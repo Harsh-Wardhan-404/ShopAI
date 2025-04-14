@@ -47,7 +47,7 @@ export async function GET(
           }
         },
         include: {
-          categories: true
+          Category: true
         }
       });
 

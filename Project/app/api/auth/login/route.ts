@@ -21,7 +21,7 @@ export async function POST(request: Request) {
     })
 
     // Check if user exists and password matches
-    if (!user || !(await bcrypt.compare(password, user.password))) {
+    if (!user || !user.password || !(await bcrypt.compare(password, user.password))) {
       return NextResponse.json({ message: 'Invalid credentials' }, { status: 401 })
     }
 

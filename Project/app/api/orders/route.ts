@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/pages/api/auth/[...nextauth]";
+import { Prisma } from "@prisma/client";
 
 export async function POST(request: Request) {
   try {
@@ -35,7 +36,7 @@ export async function POST(request: Request) {
     }
 
     // Create the order with a transaction to ensure all related data is saved
-    const order = await prisma.$transaction(async (tx) => {
+    const order = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // 1. Create the order
       const newOrder = await tx.order.create({
         data: {

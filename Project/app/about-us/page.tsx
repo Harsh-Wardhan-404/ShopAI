@@ -184,6 +184,7 @@ export default function AboutUs() {
         };
 
         // The co2 instance was imported directly, not as a constructor
+        //@ts-ignore
         const emissions = co2.perByte(totalBytes, options);
 
         // The result might be a complex object rather than a simple number

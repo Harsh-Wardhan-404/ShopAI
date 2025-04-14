@@ -2,7 +2,6 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
-// import { authOptions } from "@/lib/auth";
 
 // Special key to track background sentiment analysis tasks
 const activeSentimentTasks = new Set<number>();

@@ -8,16 +8,16 @@ export async function GET(
 ) {
   try {
     console.log("Processing recommendation request for order:", params.id);
-    
+
     const orderId = parseInt(params.id, 10);
-    
+
     if (isNaN(orderId)) {
       return NextResponse.json(
         { error: "Invalid order ID format" },
         { status: 400 }
       );
     }
-    
+
     // Check if order exists
     const orderExists = await prisma.order.findUnique({
       where: { id: orderId },
@@ -33,11 +33,11 @@ export async function GET(
     try {
       // Get recommendations from Ollama based on order ID
       const products = await getRecommendations({ orderId });
-      
+
       return NextResponse.json({ products });
     } catch (ollamaError) {
       console.error("Ollama recommendation error:", ollamaError);
-      
+
       // Fallback to basic recommendations if Ollama fails
       const fallbackProducts = await prisma.product.findMany({
         take: 4,
@@ -47,10 +47,10 @@ export async function GET(
           }
         },
         include: {
-          categories: true
+          Category: true
         }
       });
-      
+
       return NextResponse.json({ products: fallbackProducts });
     }
   } catch (error) {
