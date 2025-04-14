@@ -70,6 +70,13 @@ export function ReviewList({ productId, refreshTrigger = 0 }: ReviewListProps) {
         const fetchedReviews = data.reviews || [];
         setReviews(fetchedReviews);
 
+        // Early return if there are no reviews - skip sentiment analysis
+        if (fetchedReviews.length === 0) {
+          setIsLoading(false);
+          return;
+        }
+
+        // Only proceed with sentiment analysis if we have reviews
         // Try to get cached sentiment first
         const sentimentResponse = await fetch(`/api/products/${productId}/sentiment`);
         const cachedSentiment = await sentimentResponse.json();
@@ -172,6 +179,18 @@ export function ReviewList({ productId, refreshTrigger = 0 }: ReviewListProps) {
   };
 
   if (isLoading) {
+    // First check if we can already determine if there are no reviews
+    if (reviews.length === 0 && isLoading && !error) {
+      // If we've already fetched reviews but are still loading sentiment, 
+      // we can show the "No reviews" message early
+      return (
+        <div className="mt-6">
+          <h3 className="text-xl font-medium mb-4">Customer Reviews</h3>
+          <p>No reviews yet. Be the first to review this product!</p>
+        </div>
+      );
+    }
+
     return (
       <div className="space-y-4 mt-6">
         <h3 className="text-xl font-medium">Customer Reviews</h3>
@@ -303,8 +322,8 @@ export function ReviewList({ productId, refreshTrigger = 0 }: ReviewListProps) {
                   <StarIcon
                     key={star}
                     className={`w-4 h-4 ${star <= review.rating
-                        ? "text-yellow-400 fill-yellow-400"
-                        : "text-gray-300"
+                      ? "text-yellow-400 fill-yellow-400"
+                      : "text-gray-300"
                       }`}
                   />
                 ))}
