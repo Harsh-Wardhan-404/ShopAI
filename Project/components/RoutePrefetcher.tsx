@@ -91,7 +91,7 @@ export function RoutePrefetcher() {
               method: 'GET',
               // Use only-if-cached to avoid unnecessary network requests
               cache: 'only-if-cached',
-              // Don't wait for the response
+              // @ts-ignore - 'priority' exists in newer fetch specs but not in TypeScript's types
               priority: 'low'
             }).catch(() => { })
           )
@@ -109,6 +109,7 @@ export function RoutePrefetcher() {
       try {
         await fetch('/api/init/route', {
           method: 'GET',
+          // @ts-ignore - 'priority' exists in newer fetch specs but not in TypeScript's types
           priority: 'low'
         });
       } catch (error) {

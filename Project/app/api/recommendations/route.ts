@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/pages/api/auth/[...nextauth]";
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     // Get current user from session

@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+const ollamaHost = process.env.OLLAMA_HOST || "http://localhost:11434";
+const ollamaModel = process.env.OLLAMA_MODEL || "llama3.2:1b";
+
 // Helper class for Ollama rate limiting
 class OllamaRateLimiter {
   private static instance: OllamaRateLimiter;
@@ -66,6 +69,18 @@ class OllamaRateLimiter {
 // Create a singleton instance
 const ollamaRateLimiter = OllamaRateLimiter.getInstance();
 
+interface ReviewForAnalysis {
+  id: number;
+  rating: number;
+  comment: string;
+  productId: number;
+  user?: {
+    id: string;
+    name: string;
+    image?: string | null;
+  };
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -77,15 +92,15 @@ export async function POST(request: Request) {
     const actualReviewCount = reviews.length;
 
     // Calculate average rating
-    const ratings = reviews.map((review: any) => review.rating || 0);
+    const ratings = reviews.map((review: ReviewForAnalysis) => review.rating || 0);
     const avgRating = ratings.length > 0
       ? ratings.reduce((a: number, b: number) => a + b, 0) / ratings.length
       : 0;
 
     // Extract comments for analysis
     const comments = reviews
-      .filter((r: any) => r.comment)
-      .map((r: any) => r.comment);
+      .filter((r: ReviewForAnalysis) => r.comment)
+      .map((r: ReviewForAnalysis) => r.comment);
 
     if (comments.length === 0) {
       // If no comments, return basic stats based on ratings
@@ -143,11 +158,11 @@ export async function POST(request: Request) {
 
       try {
         // Call Ollama API
-        const response = await fetch("http://localhost:11434/api/generate", {
+        const response = await fetch(`${ollamaHost}/api/generate`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            model: "llama3.2:1b",
+            model: ollamaModel,
             prompt: prompt,
             stream: false
           })

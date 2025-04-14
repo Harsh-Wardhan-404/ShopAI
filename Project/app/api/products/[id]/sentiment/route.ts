@@ -6,6 +6,26 @@ import { getServerSession } from "next-auth/next";
 // Special key to track background sentiment analysis tasks
 const activeSentimentTasks = new Set<number>();
 
+// Define a Review interface for type safety
+interface Review {
+  id: number;
+  rating: number;
+  comment: string | null; // Allow null comments
+  productId: number;
+  createdAt: Date;
+  user: {
+    id: string;
+    name: string;
+    email?: string;
+    role?: string;
+    password?: string | null;
+    emailVerified?: Date | null;
+    image?: string | null;
+    createdAt?: Date;
+    updatedAt?: Date;
+  };
+}
+
 export async function GET(
   request: Request,
   { params }: { params: { id: string } }
@@ -38,8 +58,22 @@ export async function GET(
         orderBy: { createdAt: 'desc' }
       });
 
-      // Trigger background sentiment analysis
-      updateSentimentInBackground(productId, reviews);
+      // Transform the reviews to match your interface exactly
+      const transformedReviews: Review[] = reviews.map((review: any) => ({
+        id: review.id,
+        rating: review.rating,
+        comment: review.comment || "", // Convert null to empty string
+        productId: review.productId,
+        createdAt: review.createdAt,
+        user: {
+          id: review.user.id,
+          name: review.user.name,
+          image: review.user.image
+        }
+      }));
+
+      // Pass the transformed reviews
+      updateSentimentInBackground(productId, transformedReviews);
     }
 
     // Always return the cached sentiment (if exists), even if it's outdated
@@ -58,14 +92,14 @@ export async function GET(
     });
 
     if (ratings.length > 0) {
-      const avgRating = ratings.reduce((acc, r) => acc + r.rating, 0) / ratings.length;
+      const avgRating = ratings.reduce((acc: number, r: { rating: number }) => acc + r.rating, 0) / ratings.length;
       const basicSentiment = {
         overall_sentiment: avgRating >= 4 ? "positive" : avgRating >= 3 ? "neutral" : "negative",
         sentiment_score: avgRating >= 4 ? 0.7 : avgRating >= 3 ? 0 : -0.7,
         avg_rating: avgRating,
-        positive_count: ratings.filter((r) => r.rating >= 4).length,
-        neutral_count: ratings.filter((r) => r.rating === 3).length,
-        negative_count: ratings.filter((r) => r.rating <= 2).length,
+        positive_count: ratings.filter((r: { rating: number }) => r.rating >= 4).length,
+        neutral_count: ratings.filter((r: { rating: number }) => r.rating === 3).length,
+        negative_count: ratings.filter((r: { rating: number }) => r.rating <= 2).length,
         summary: `Based on ${ratings.length} ratings with an average of ${avgRating.toFixed(1)} stars.`,
         refreshing: true
       };
@@ -85,7 +119,7 @@ export async function GET(
 }
 
 // Function to update sentiment analysis in the background
-async function updateSentimentInBackground(productId: number, reviews: any[]) {
+async function updateSentimentInBackground(productId: number, reviews: Review[]) {
   // If this product is already being processed, don't start a new task
   if (activeSentimentTasks.has(productId)) {
     console.log(`Sentiment analysis for product ${productId} already in progress, skipping`);

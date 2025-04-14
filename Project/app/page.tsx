@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { ProductCarousel } from "@/components/products/ProductCarousel"
 import { prisma } from "@/lib/prisma"
+import { dynamic } from './config';
 
 export default async function Home() {
   // Fetch featured products from the database
@@ -106,7 +107,7 @@ export default async function Home() {
                 </Button>
               </Link>
             </div>
-            
+
             {/* Product Carousel */}
             <ProductCarousel products={featuredProducts} />
           </div>

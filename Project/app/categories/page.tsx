@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { prisma } from "@/lib/prisma"
+export const dynamic = 'force-dynamic';
 
 export default async function CategoriesPage() {
   // Get unique categories with product counts
@@ -16,7 +17,7 @@ export default async function CategoriesPage() {
   })
 
   // Sort categories by product count (descending)
-  const sortedCategories = categoryData.sort((a, b) =>
+  const sortedCategories = categoryData.sort((a: { category: string | null; _count?: { id: number } }, b: { category: string | null; _count?: { id: number } }) =>
     (b._count?.id || 0) - (a._count?.id || 0)
   )
 
@@ -25,7 +26,7 @@ export default async function CategoriesPage() {
       <h1 className="text-3xl font-bold mb-6">Shop by Category</h1>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-        {sortedCategories.map((category) => (
+        {sortedCategories.map((category: { category: string | null; _count?: { id: number } }) => (
           <Link
             href={`/categories/${encodeURIComponent(category.category || '')}`}
             key={category.category}

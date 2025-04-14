@@ -1,8 +1,20 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { Product } from '@prisma/client';
 import { ProductCard } from '@/components/products/ProductCard';
+
+// Define the Product interface instead of importing it
+interface Product {
+  id: number;
+  name: string;
+  description: string | null;
+  price: number;
+  imageUrl: string | null;
+  category: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  // Add any other fields your product has
+}
 
 interface ProductWithCategories extends Product {
   Category: { id: number; name: string }[];
@@ -32,7 +44,7 @@ export default function ProductRecommendations({ productId }: { productId: numbe
         setError(null);
         console.log(`Fetching recommendations for product: ${productId}`);
 
-        const response = await fetch(`/api/recommendations/similar/${productId}`);
+        const response = await fetch(`/api/recommendations/similar?id=${productId}`);
 
         if (!response.ok) {
           throw new Error(`Failed to fetch recommendations: ${response.status}`);
@@ -92,7 +104,7 @@ export default function ProductRecommendations({ productId }: { productId: numbe
   const pollForUpdatedRecommendations = async (productId: number) => {
     try {
       console.log('Polling for updated recommendations');
-      const response = await fetch(`/api/recommendations/similar/${productId}`);
+      const response = await fetch(`/api/recommendations/similar?id=${productId}`);
 
       if (!response.ok) {
         console.error('Failed to poll for updated recommendations');

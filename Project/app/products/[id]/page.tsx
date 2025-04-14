@@ -40,7 +40,7 @@ export default async function ProductPage({ params }: { params: { id: string } }
 
   const reviewCount = reviews.length;
   const productRating = reviewCount > 0
-    ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviewCount
+    ? reviews.reduce((sum: number, review) => sum + review.rating, 0) / reviewCount
     : 0;
 
   // Check if user has purchased the product

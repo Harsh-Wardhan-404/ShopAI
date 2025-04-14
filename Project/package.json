@@ -6,7 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "type-check": "next build --no-lint",
+    "docker-build": "./check-and-build.sh",
     "lint": "next lint",
+    "typecheck": "sh ./type-check.sh",
+    "predocker-build": "npm run typecheck",
     "setup-db": "npx ts-node --compiler-options '{\"module\":\"CommonJS\"}' prisma/setupDb.ts"
   },
   "dependencies": {

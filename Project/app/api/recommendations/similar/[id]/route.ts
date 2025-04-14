@@ -1,12 +1,15 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getRecommendations } from "@/lib/recommendations";
-
+export const dynamic = 'force-dynamic';
 export async function GET(
   request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
+    if (!params.id) {
+      return NextResponse.json({ error: "Product ID is required" }, { status: 400 });
+    }
     const productId = parseInt(params.id, 10);
     console.log("Processing similar products API for product:", productId);
     if (isNaN(productId)) {
@@ -43,7 +46,7 @@ export async function GET(
 
     // If we have cached recommendations, fetch those products
     if (hasCachedRecommendations && product.recommendedProductIds) {
-      const recommendedIds = product.recommendedProductIds.split(',').map(id => parseInt(id.trim(), 10));
+      const recommendedIds = product.recommendedProductIds.split(',').map((id: string) => parseInt(id.trim(), 10));
       products = await prisma.product.findMany({
         where: {
           id: { in: recommendedIds }
@@ -52,8 +55,12 @@ export async function GET(
       });
 
       // Sort products to match the order in recommendedProductIds
-      const idToOrderMap = new Map(recommendedIds.map((id, index) => [id, index]));
-      products.sort((a, b) => (idToOrderMap.get(a.id) || 0) - (idToOrderMap.get(b.id) || 0));
+      const idToOrderMap = new Map(recommendedIds.map((id: number, index: number) => [id, index]));
+      products.sort((a, b) => {
+        const orderA = idToOrderMap.get(a.id);
+        const orderB = idToOrderMap.get(b.id);
+        return (typeof orderA === 'number' ? orderA : 0) - (typeof orderB === 'number' ? orderB : 0);
+      });
     }
 
     // If we have cached recommendations, return them immediately
@@ -125,7 +132,8 @@ async function updateRecommendationsInBackground(productId: number) {
         const freshProducts = await getRecommendations({ productId });
 
         if (freshProducts && freshProducts.length > 0) {
-          const recommendedIds = freshProducts.map(p => p?.id).join(',');
+          //@ts-ignore
+          const recommendedIds = freshProducts.map((p) => p?.id?.toString()).filter(Boolean).join(',');
           await prisma.product.update({
             where: { id: productId },
             data: {

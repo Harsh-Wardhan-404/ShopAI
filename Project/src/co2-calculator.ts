@@ -1,8 +1,23 @@
-import { CO2 } from '@tgwf/co2';
-// ... potentially other imports ...
+import { co2 } from '@tgwf/co2';
 
-// Assuming 'options' and 'totalBytes' are defined somewhere above
-const co2 = new CO2(options); // Instantiate the CO2 class
-const emissions = co2.perByte(totalBytes); // Call perByte on the instance
+/**
+ * Calculate CO2 emissions for a given number of bytes transferred
+ * @param totalBytes - The number of bytes transferred
+ * @returns The estimated CO2 emissions in grams
+ */
+export function calculateEmissions(totalBytes: number) {
+  // Define custom options for CO2 calculation
+  const options = {
+    gridIntensity: {
+      dataCenter: { country: "USA" }, // Assuming data center is in the US
+    }
+  };
 
-// ... rest of the file ...
+  // Instantiate the CO2 calculator with options
+  const calculator = new co2(options);
+
+  // Calculate emissions
+  const emissions = calculator.perByte(totalBytes);
+
+  return emissions;
+}

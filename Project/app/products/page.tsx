@@ -1,5 +1,5 @@
-
 import { ProductCard } from "@/components/products/ProductCard"
+export const dynamic = 'force-dynamic';
 import { prisma } from "@/lib/prisma"
 
 export default async function ProductsPage() {

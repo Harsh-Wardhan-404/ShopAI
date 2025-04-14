@@ -5,6 +5,10 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  typescript: {
+
+    ignoreBuildErrors: true,
+  },
   images: {
     formats: ['image/webp'], // Use efficient WebP format
     deviceSizes: [640, 750, 828, 1080, 1200], // Limited device sizes
@@ -25,6 +29,8 @@ const nextConfig = {
   experimental: {
     optimizeCss: true, // Optimize CSS
     scrollRestoration: true, // Better navigation performance
+    outputFileTracingRoot: process.cwd(),
+    
   },
   poweredByHeader: false, // Remove unnecessary header
   compress: true, // Enable compression

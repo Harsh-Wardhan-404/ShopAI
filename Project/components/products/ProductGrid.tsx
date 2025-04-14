@@ -1,9 +1,20 @@
 // components/products/ProductGrid.tsx
-import { Product } from "@prisma/client";
+import { ProductCard } from "./ProductCard";
 import Link from "next/link";
 import Image from "next/image";
 import { formatCurrency } from "@/lib/utils";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
+
+// Define the Product interface directly instead of importing it
+interface Product {
+  id: number;
+  name: string;
+  description: string | null;
+  price: number;
+  imageUrl: string | null;
+  category: string | null;
+  // Add other fields as needed
+}
 
 interface ProductGridProps {
   products: any[];

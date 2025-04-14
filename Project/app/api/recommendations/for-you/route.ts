@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/pages/api/auth/[...nextauth]";
-import { getRecommendedProductsFromOrders, getPopularProducts } from "@/lib/recommendations";
+import { getRecommendations, getPopularProducts, getRecommendedProductsFromOrders } from "@/lib/recommendations";
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {

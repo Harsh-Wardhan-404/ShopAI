@@ -12,7 +12,7 @@ export function NavigationProgress() {
 
   useEffect(() => {
     // Store the current path+query
-    const currentPath = pathname + searchParams.toString()
+    const currentPath = pathname + (searchParams ? searchParams.toString() : '')
 
     // If it's different from previous path, we're navigating
     if (previousPath && previousPath !== currentPath) {
