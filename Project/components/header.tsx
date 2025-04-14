@@ -36,7 +36,7 @@ export default function Header() {
           <nav className="hidden md:flex items-center gap-6">
             <Link href="/products" className="text-sm font-medium hover:underline">Products</Link>
             <Link href="/categories" className="text-sm font-medium hover:underline">Categories</Link>
-            <Link href="/sustainable" className="text-sm font-medium hover:underline">Sustainable Picks</Link>
+            <Link href="/about-us" className="text-sm font-medium hover:underline">About Us</Link>
           </nav>
         </div>
 
